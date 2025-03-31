@@ -1,0 +1,67 @@
+
+        /* 登录按钮的样式 */
+        #loginButton {
+            /* position: fixed; */
+            right: 10px;
+            top: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            background-color: #007bff; /* 蓝色背景 */
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.5);
+    
+         
+        }
+        
+        
+        #loginButton:hover {
+            background-color: #0056b3; /* 鼠标悬停时的背景色 */
+        }
+
+        /* 已登录图标的样式 */
+        #loggedInIcon {
+            position: fixed;
+            right: 10px;
+            top: 10px;
+            display: none; /* 默认不显示 */
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            box-shadow: 0px 0px 5px #888888;
+            cursor: pointer;
+        }
+
+        /* 小窗口的样式 */
+        #popup {
+            position: fixed;
+            right: 10px;
+            top: 60px;
+            width: 200px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: none;
+            padding: 10px;
+            box-shadow: 0px 0px 10px #888888;
+        }
+
+        /* 退出按钮样式 */
+        #logoutButton {
+            display: block;
+            text-align: right;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        #logoutButton:hover {
+            background-color: #d32f2f;
+        }
+  

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>支付宝当面付</title>    
+    <script>
+      // 定义跳转函数
+      function redirect() {
+          window.location.href = "/chat";
+      }
+
+      // 定义倒计时函数
+      function countdown(seconds) {
+          const countdownElement = document.getElementById('countdown');
+          let remainingTime = seconds;
+
+          const interval = setInterval(() => {
+              if (remainingTime > 0) {
+                  countdownElement.textContent = remainingTime;
+                  remainingTime--;
+              } else {
+                  clearInterval(interval);
+                  redirect();
+              }
+          }, 1000); // 每秒更新一次
+      }
+
+      window.onload = () => {
+          countdown(5); // 设置倒计时时长为300秒（5分钟）
+      }
+  </script>
+</head>
+<body>
+  <div class="otherUrl" align="center">       
+    <a href="/chat">AI chat</a>
+</div>
+<div align="center">
+  <h1>支付成功</h1>
+  <h1>这个页面将在 <span id="countdown">5</span> 秒后自动跳转</h1>
+  <h1>Please contact with kzhou2017@outlook.com ,wechat:nightwish2010 for technical support</h1>
+  <h1>如果有任何问题请联系,email:kzhou2017@outlook.com ,微信:nightwish2010 </h1>  
+</div>
+</body>
+</html>

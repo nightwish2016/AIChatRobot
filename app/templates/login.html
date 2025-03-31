@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Register</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            text-align: center;
+            width: 300px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="email"],
+        input[type="submit"],
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .register-link {
+            text-decoration: none;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Login</h2>
+        <!-- <form id="login"  method="post"> -->
+            <input type="text" id="email" name="email" placeholder="Email">
+            <input type="password" id="password" name="password" placeholder="Password">
+            <button type="submit" id="submit">Login</button>
+            <p id="error-message" style="color: red;"></p> <!-- 错误信息显示区域 -->
+        <!-- </form> -->
+    
+        <!-- <a href="/loginWithGoogle">Login with Google</a> -->
+        
+        <p>Don't have an account? <a href="/register" class="register-link" >Sign up here</a></p>
+        <a href="/reset_password">Forgot Password?</a>
+    </div>
+    <script>
+
+document.getElementById('submit').addEventListener('click', async function(event) {
+    login()
+});
+
+       async function login()
+        {
+            var email = document.getElementById('email').value;
+         var password = document.getElementById('password').value;
+         let data={email:email,password:password}
+         let apiUrl="/api/v1/login";
+        let loginResult=await postData(apiUrl, data);
+        console.log(loginResult);
+        console.log(loginResult.statusCode);
+        console.log(loginResult.responseData);
+        if(loginResult.statusCode==200)
+        {
+            // window.location.href = "/chat";
+            // 获取URL的查询字符串部分
+            const queryString = window.location.search;
+
+            // 使用URLSearchParams解析查询字符串
+            const urlParams = new URLSearchParams(queryString);
+            console.log(urlParams)          
+            const name = urlParams.get('origin');
+            console.log("*********")
+            
+            console.log(name)
+            if (name==null)
+            {
+                window.location.href = "/chat";
+            }
+            else{
+            window.location.href = name
+            }
+          
+        }
+        else
+        {
+            console.log(loginResult.responseData.message);
+            document.getElementById('error-message').textContent = loginResult.responseData.message;
+        }
+        
+
+
+        }
+       
+
+        async function postData(url, data) {
+            let responseData;
+            let statusCode;
+            try {
+                // 使用fetch函数发送POST请求
+                const response = await fetch(url, {
+                method: 'POST', // 设置请求方法为POST
+                headers: {
+                    'Content-Type': 'application/json' // 设置请求头部，表明发送的数据类型为JSON
+                },
+                body: JSON.stringify(data) // 将JavaScript对象转换为JSON字符串
+                });
+
+                // 检查响应状态
+                // if (!response.ok) {
+                // throw new Error('Network response was not ok');
+                // }
+
+                // 将响应体转换为JSON
+                 responseData = await response.json();
+                 statusCode = response.status
+                // console.log(responseData);
+                // console.log(statusCode);
+                // debugger;
+                // console.log({statusCode,responseData})
+                
+            } catch (error) {
+                console.error('There was a problem with your fetch operation:', error);
+                
+            }
+            return {statusCode,responseData}; // 返回处理后的数据
+        }
+
+    </script>
+    
+</body>
+</html>

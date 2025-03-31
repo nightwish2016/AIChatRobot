@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chat with GPT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/loginButton.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/displayWindow.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat/chat.css') }}">
+    <script src="{{ url_for('static', filename='js/common/loginButton.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat/chatUI.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat/chatRequest.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/image/img.js') }}"></script>
+    <style>
+        /* body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+        }
+        .chat-container {
+            width: 70%;
+            background-color: white;
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        } */
+        #large-image-container {
+            width: 70%;
+            background-color: white;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        #large-image {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        /* #history {
+            background-color: #f5f5f5;
+            color: #333;
+            padding: 15px;
+            overflow-y: auto;
+            height: 500px;
+            border: 1px solid #ccc;
+            margin: 10px 0; 
+        }
+        #prompt {
+            width: 100%;
+            margin: 10px 0; 
+        }
+        button {
+            background-color: #6272a4;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        } */
+        /* .user-input  {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-radius: 3px;
+            background-color:black; 
+        } */
+        .chatgpt-output {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-radius: 3px;
+            background-color:black; /* Set background color to white for chat output */
+        }
+        .chatgpt-output img {
+            max-width: 100px;
+            cursor: pointer;
+        }
+        #close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 24px;
+            padding: 5px;
+            background-color: #ff0000;
+            color: white;
+            border: none;
+        }
+        /* .chatgpt-processing {
+            background-color: #282a36;
+            color: #f8f8f2;
+        } */
+    </style>
+</head>
+<body>
+    
+        
+    <div id="large-image-container">
+        <button id="close-button" >×</button>
+        <img id="large-image" src="" alt="Large View">
+        <!-- <a id="download-button" download>Download</a> -->
+    </div>
+    
+    <div id="chat-container" class="chat-container">
+        <div class="upMenu">
+            <div id="welcome"><p>Welcome, {{ user_name }}!</p></div>
+            <div class="otherUrl"> <a href="/chat">AI chat</a> </div> 
+            <div>
+                <form id="login" action="/loginPage?origin=/image"  method="post">
+                    <button id="loginButton">Login</button>
+                    <!-- <img id="loggedInIcon" src="https://lh3.googleusercontent.com/a/ACg8ocLyYBQLGnbfPm-6UdUVF_D4Avc_rzmzInouMfHteVAUvFhWLg=s96-c" alt="Logged In"/> -->
+                    <img id="loggedInIcon" src="{{ url_for('static', filename='image/login.png') }}" alt="Logged In"/> 
+                    </form>
+                </div>   
+        </div>
+            
+            <!-- 登录按钮和已登录图标 -->
+        
+        
+    <!-- 小窗口和退出按钮 -->
+    <div id="popup">    
+        <div id="balance">Balance:¥{{balance}}</div>  
+        <br> 
+        <div id="fund">
+            <form action="/orderPreCreate" >
+                <button  id="fund" type="submit">Fund</button>
+            </form>
+        </div>        
+        <br> 
+        <form action="/logout" >
+            <button  id="logoutButton" type="submit">Logout</button>
+        </form>
+    </div>
+       
+        <div id="history"></div>
+        <label for="model-select">Choose a model:</label>
+        <select id="model-select">
+            <option value="dall-e-2">DALL E2</option>
+			<option value="dall-e-3">DALL E3</option>
+                  
+            <!-- Add other models as needed -->
+        </select>
+		<br>
+		
+		<br>
+        <label for="pixl-select">Choose pixl:</label>
+        <select id="pixl-select">
+            <!-- <option value="256x256">256x256</option>
+			<option value="512x512">512x512</option>
+			<option value="1024x1024">1024x1024</option> -->
+		
+                  
+            <!-- Add other models as needed -->
+        </select>
+		<br>
+        <textarea id="prompt" rows="4" placeholder="Enter your message here..."></textarea>
+        <br>
+        <button id="imageCreate" >Send</button>
+    </div>
+    <div id="output"></div>
+
+    <script>
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("debug1***")
+    var model = document.getElementById("model-select");
+    var pixl = document.getElementById("pixl-select");
+
+    // 初始时清空第二个下拉框
+    pixl.options.length = 0;
+    model.addEventListener('change', function() {
+    // model.onchange = function() {
+      var value = model.value;
+      pixl.options.length = 0; // 清空现有的选项
+
+      if (value === "dall-e-2") {
+        console.log("debug***")
+        pixl.options.add(new Option("256x256", "256x256"));
+        pixl.options.add(new Option("512x512", "512x512"));
+        pixl.options.add(new Option("1024x1024", "1024x1024"));
+      } else if (value === "dall-e-3") {
+        // 如果选的是'b'，第二个下拉框添加'3'和'4'
+        pixl.options.add(new Option("1024x1024", "1024x1024"));
+      }
+    });
+
+    // 初始化第一次触发select1的change事件，填充select2
+    model.dispatchEvent(new Event('change'));
+  });
+
+         loginButtonDisplayProcess()      
+         let chatcontainer = document.getElementById('chat-container');
+        let historyField = document.getElementById('history');
+        let largeImageContainer = document.getElementById('large-image-container');
+        let largeImage = document.getElementById('large-image');
+
+              
+        
+document.addEventListener('DOMContentLoaded', function() {
+    var button = document.getElementById('imageCreate');
+    button.onclick = function() {
+        console.log("button clicked")
+        const prompt = document.getElementById('prompt').value;
+        const model = document.getElementById('model-select').value;
+        const pixl = document.getElementById('pixl-select').value;
+        generateImage(prompt,model,pixl)
+    };
+  });
+
+
+  function sendImageRequestByEnter(elmentId,keyevent)
+        {
+             // 添加回车键发送消息的功能
+            
+                document.getElementById(elmentId).addEventListener(keyevent, function(event) {
+                if (event.keyCode === 13) {                   
+                    event.preventDefault(); // 阻止回车默认的换行行为
+                    const prompt = document.getElementById('prompt').value;
+                    const model = document.getElementById('model-select').value;
+                    const pixl = document.getElementById('pixl-select').value;
+                    generateImage(prompt,model,pixl)
+                }
+            });
+        }
+
+        sendImageRequestByEnter('prompt','keypress')
+							
+		 historyField.scrollTop = historyField.scrollHeight;
+    </script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+
+  body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    height: 90vh;
+    justify-content: center;
+}  
+.chat-container {
+    width: 90%;
+    
+    background-color: white;
+    margin: 0px auto 5px; /* 将上部边距设为0，并居中显示 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+@media (min-device-width: 1440px) and (max-device-width: 3200px) and (-webkit-min-device-pixel-ratio: 3.5), only screen and (min-width: 392px) and (max-width: 854px)  {
+    .chat-container {
+        width: 99%; /* 适用于高分辨率屏幕 */
+        
+    }
+}
+/* .welcome {
+    background-color: #f5f5f5;
+    color: #333;
+    padding: 15px;
+    display: flex;
+    justify-content: flex-start;
+    
+} */
+.upMenu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* margin-bottom: 20px; */
+}
+
+#history {
+    background-color: #f5f5f5;    
+    color: #333;
+    padding: 15px;
+    overflow-y: auto;
+    height: 500px;
+    border: 1px solid #ccc;
+    margin: 10px 0; /* Reduced margin */
+}
+#prompt {
+    width: 100%;
+    margin: 10px 0; /* Reduced margin */
+}
+button {
+    background-color: #6272a4;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+.user-input, .chatgpt-output {
+    margin-bottom: 10px;
+    padding: 5px;
+    border-radius: 3px;
+    color: #f8f8f2;    
+    background-color: #282a36; /* Set background color to white for chat output */
+}
+
+
+.chatgpt-processing {
+    background-color: #282a36;
+    color: #f8f8f2;
+}
+
+/* .otherUrl {
+    display: flex;
+    justify-content: flex-end; 
+    align-items: center;
+    margin-bottom: 20px;
+    
+} */
+
+
+
+
+#history {
+    /* overflow: auto; */
+    height: 70%;
+    /* max-height: calc(60vh - 30px); */
+}
+

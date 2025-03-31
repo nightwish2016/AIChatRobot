@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>充值页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 300px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .form-group input[type="number"] {
+            margin-top: 10px;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[readonly]{
+background-color: #f1f1f5
+}
+ 
+    </style>
+</head>
+<body>
+   
+    <div class="container">
+        <div class="otherUrl">       
+            <a href="/chat">AI chat</a>
+        </div>
+        <h2>Fund</h2>
+        <form id="rechargeForm" action="/create_trade" method="get">
+            <div class="form-group">
+                <label for="balance">Current Balance:${{balance}}</label>   
+            </div>
+            <div class="form-group">
+                <label for="userEmail">User Email:</label>   
+                <input type="text" readonly="true" id="user_email" name="user_email" value="{{ user_email }}"> 
+            </div>
+            <div class="form-group">
+                <label for="amount">Load Amount</label>
+                <select id="amount" name="amount" required>
+                    <option value="">Choose</option>
+					
+					<option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="other">Other</option>
+            </select>
+            <input type="text" id="otherAmount" name="otherAmount" style="display:none" placeholder="请输入金额">
+        </div>
+        <button type="submit" class="submit-btn">充值</button>
+    </form>
+</div>
+<script>
+    const amountSelect = document.getElementById('amount');
+    const otherAmountInput = document.getElementById('otherAmount');
+
+    amountSelect.addEventListener('change', function() {
+        if (this.value === 'other') {
+            otherAmountInput.style.display = 'block';
+            otherAmountInput.required = true; // Make otherAmount required when visible
+        } else {
+            otherAmountInput.style.display = 'none';
+            otherAmountInput.required = false; // Remove required attribute when hidden
+            otherAmountInput.value = ''; // Clear the value when hidden
+        }
+    });
+
+    // Handle form submit
+    const form = document.getElementById('rechargeForm');
+    // form.addEventListener('submit', function(event) {
+    //     event.preventDefault(); // Prevent the default form submission
+
+    //     // const username = document.getElementById('username').value;
+    //     let amount = amountSelect.value;
+        
+    //     if (amount === 'other') {
+    //         amount = otherAmountInput.value;
+    //     }
+
+    //     // if (!username || !amount) {
+    //     //     alert('请输入用户名和金额');
+    //     //     return;
+    //     // }
+
+    //     // Here you can add an AJAX request to send the form data to your server
+
+    //     // alert(`用户名: ${username}\n充值金额: ${amount}`);
+    // });
+</script>
+</body>
+</html>

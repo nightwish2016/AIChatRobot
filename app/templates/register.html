@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+    
+        /* 定义错误信息的样式 */
+        .error {
+            color: red;
+            font-size: 12px;
+        }
+ 
+        .container {
+            text-align: center;
+            width: 300px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="submit"],
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Sign up</h2>
+        <form id= "registerForm" action="/register" method="post">
+            <input type="text" name="user" placeholder="Username" required>
+            <input type="email" id="email" name="email" placeholder="Email" required>
+         
+
+            <input type="password" id="password" name="password" placeholder="Password" required>          
+   
+        <br><br>
+            <input type="password" id="confirm_password"  name="confirm_password" placeholder="Confirm Password" required>
+            <span id="error_message" class="error"></span><br><br>
+     
+        <br><br>
+            <button type="submit" id="submmitButton">Register</button>
+        </form>
+
+        
+        <p>Already have an account? <a href="/">Login here</a></p>
+    </div>`  
+    
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+            var password = document.getElementById('password').value;
+            var confirmPassword = document.getElementById('confirm_password').value;
+            var errorMessage = document.getElementById('error_message');
+
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'Passwords do not match.';
+                event.preventDefault();  // 阻止表单提交
+                return;
+            } else {
+                errorMessage.textContent = '';  // 清除错误信息
+             
+            }
+            event.preventDefault();  // 阻止表单提交
+          
+            // 邮箱重复性验证
+            var email = document.getElementById('email').value;
+            console.log(email);
+            let apiUrl="/api/v1/check-email-register";
+            let data={email};  
+            console.log(data)    
+            // debugger;              
+            let emailVeifyResult=await postData(apiUrl, data);
+            if(emailVeifyResult.emailExist){
+                errorMessage.textContent = 'Email already exists.';
+                console.log("***123")
+                // debugger;
+                event.preventDefault();
+               
+            } else {
+                errorMessage.textContent = '';  // 清除错误信息
+                document.getElementById('registerForm').submit();
+            }
+
+            
+          
+            
+            
+        });
+
+
+        async function postData(url, data) {
+            try {
+                // 使用fetch函数发送POST请求
+                const response = await fetch(url, {
+                method: 'POST', // 设置请求方法为POST
+                headers: {
+                    'Content-Type': 'application/json' // 设置请求头部，表明发送的数据类型为JSON
+                },
+                body: JSON.stringify(data) // 将JavaScript对象转换为JSON字符串
+                });
+
+                // 检查响应状态
+                if (!response.ok) {
+                throw new Error('Network response was not ok');
+                }
+
+                // 将响应体转换为JSON
+                const responseData = await response.json();
+                console.log(responseData);
+                // debugger;
+                return responseData; // 返回处理后的数据
+            } catch (error) {
+                console.error('There was a problem with your fetch operation:', error);
+            }
+        }
+
+    </script>
+</body>
+</html>

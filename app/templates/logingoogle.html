@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login with Google</title>
+</head>
+<body>
+    <button onclick="loginWithGoogle()">Login with Google</button>
+    <script>
+        function loginWithGoogle() {
+            // 指定登录窗口的URL，这通常是触发OAuth流程的路由
+            const loginUrl = '/login';
+            // 打开一个新的小窗口进行登录，可以自定义窗口的大小和特性
+            window.open(loginUrl, 'Google Login', 'width=600,height=400');
+        }
+    </script>
+</body>
+</html>

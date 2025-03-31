@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify your email</title>
+    <script>
+      // 定义跳转函数
+      function redirect() {
+          window.location.href = "/loginPage";
+      }
+
+      // 定义倒计时函数
+      function countdown(seconds) {
+          const countdownElement = document.getElementById('countdown');
+          let remainingTime = seconds;
+
+          const interval = setInterval(() => {
+              if (remainingTime > 0) {
+                  countdownElement.textContent = remainingTime;
+                  remainingTime--;
+              } else {
+                  clearInterval(interval);
+                  redirect();
+              }
+          }, 1000); // 每秒更新一次
+      }
+
+      window.onload = () => {
+          countdown(15); // 设置倒计时时长为300秒（5分钟）
+      }
+  </script>
+</head>
+<body>
+  <div class="otherUrl" align="center">       
+    <a href="/chat">AI chat</a>
+</div>
+<div align="center">
+  <h1>Please verify your email for your account activation</h1>
+  <h1>This page will redirect automatically in <span id="countdown">15</span> seconds</h1>
+  <h1>Please contact with kzhou2017@outlook.com ,wechat:nighwish2010 for technical support</h1>
+  <h1>请使用您注册的邮箱查看邮件，点击邮件里的链接激活您的账户。 如果未收到激活确认邮件，请去垃圾邮件里寻找。</h1>
+  <h1>如果有任何问题请联系,email:kzhou2017@outlook.com ,微信:nightwish2010 </h1>
+</div>
+</body>
+</html>
