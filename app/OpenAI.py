@@ -24,9 +24,12 @@ class OpenAI:
         # print("加密后的环境变量:", encrypted_from_env)
 
         # 解密环境变量
-        api_key = cipher.decrypt(encrypted_from_env).decode()
+        # api_key = cipher.decrypt(encrypted_from_env).decode()
         # print("解密后的环境变量:", api_key)
-        openai.api_key = api_key  
+        api_key=os.getenv('OPENAI_API_KEY')
+        openai.api_key = api_key
+        self.ds_api_key=os.getenv('DS_API_KEY')
+        self.base_url="https://api.deepseek.com"
         self.openai=openai
 
     def chat_with_gpt(self,prompt,model): 
@@ -122,12 +125,19 @@ class OpenAI:
         userid=sessionDict["user_id"]
 
         conversation_history.append({"role": "user", "content": prompt})
-        enc = tiktoken.encoding_for_model(model)
+        enc=0
+        if model!="deepseek-chat":
+            enc = tiktoken.encoding_for_model(model)
+        else:
+            enc = tiktoken.encoding_for_model("gpt-4o")
         u=TokenNumber()
         try:
             logger.debug("open ai call start**********1")
             current_time2 = datetime.datetime.now()
-            logger.debug(current_time2)
+            logger.debug(current_time2)    
+            if model=="deepseek-chat":
+                self.openai.api_key=self.ds_api_key
+                self.openai.base_url=self.base_url
             response = self.openai.chat.completions.create(
                 model=model,
                 messages=conversation_history,
@@ -168,11 +178,17 @@ class OpenAI:
             userId=userid
             role="assistant"
             
-            res=enc.encode(prompt)
+            
             #print(len(res))
            
-            complettionTokens=len(enc.encode(finalMessages))          
-            promptTokens=u.num_tokens_from_messages(conversation_history,model)
+            res=enc.encode(prompt)
+            complettionTokens=len(enc.encode(finalMessages))
+            promptTokens=0
+            if model!="deepseek-chat":
+                promptTokens=u.num_tokens_from_messages(conversation_history,model) 
+            else:
+                promptTokens=u.num_tokens_from_messages(conversation_history,"gpt-4o") 
+            
             totalTokens=complettionTokens+promptTokens
             created=timestamp
             GptContent=finalMessages          
