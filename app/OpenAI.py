@@ -26,10 +26,19 @@ class OpenAI:
         # 解密环境变量
         # api_key = cipher.decrypt(encrypted_from_env).decode()
         # print("解密后的环境变量:", api_key)
-        api_key=os.getenv('OPENAI_API_KEY')
-        openai.api_key = api_key
+        self.open_api_key=os.getenv('OPENAI_API_KEY')
+        self.openai_base_url="https://api.openai.com/v1/"
+       
         self.ds_api_key=os.getenv('DS_API_KEY')
-        self.base_url="https://api.deepseek.com"
+        self.ds_ai_base_url="https://api.deepseek.com"
+
+
+        print("OPenAIKEY:"+str(self.open_api_key))
+        print("DSAPIKEY:"+str(self.ds_api_key))
+
+        openai.api_key = self.open_api_key
+        openai.base_url=self.openai_base_url
+    
         self.openai=openai
 
     def chat_with_gpt(self,prompt,model): 
@@ -137,7 +146,10 @@ class OpenAI:
             logger.debug(current_time2)    
             if model=="deepseek-chat":
                 self.openai.api_key=self.ds_api_key
-                self.openai.base_url=self.base_url
+                self.openai.base_url=self.ds_ai_base_url
+            else:
+                self.openai.api_key=self.open_api_key
+                self.openai.base_url=self.openai_base_url
             response = self.openai.chat.completions.create(
                 model=model,
                 messages=conversation_history,
@@ -195,7 +207,8 @@ class OpenAI:
             params= (sessionid ,userId,role ,model ,promptTokens ,complettionTokens ,totalTokens,created ,GptContent , prompt,1 )            
             u=chatHistoryUtils()
             u.insertChatHistory(params)    
-            conversation_history.append({"role": "assistant", "content": finalMessages})   
+            conversation_history.append({"role": "assistant", "content": finalMessages}) 
+            redis_client.hset("conversation_models", conversationid, model)      
             redis_client.set(f'conversation:{conversationid}',  json.dumps(conversation_history),ex=3600)   
         except Exception as e:
             logger.error(str(e)) 
