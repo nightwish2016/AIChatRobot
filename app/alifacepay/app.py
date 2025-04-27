@@ -4,6 +4,7 @@ import logging
 import traceback
 from random import randint
 import time
+import os
 
 # api文档 https://docs.open.alipay.com/194/105203
 from alipay.aop.api.AlipayClientConfig import AlipayClientConfig
@@ -355,19 +356,21 @@ class AliFacePay:
 if __name__ == "__main__":
     # 基础信息配置
     # 只需要三个关键信息 app_id，alipay_public_key，app_private_key
-    sandbox = True
+    sandbox = True 
     if sandbox:
-        app_id = '9021000137634851'
-        alipay_public_key_string = '''-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo3XUTdshfLg3a415orD2APguhRTdN/fLeVetJndYJYxhE33n7MHdR6zntHc/z4dBuekxBivUoQ5kkN+iFBSa3DFWz5qIsOqizdjUrvFf+xVvgcw3AteKx7MslCIhRACzKweLzMkGdPt+MRTuZIOE01KbeSu7yR5DaYuwIFSYJAmpzG0rN37TiaJz9dsQPF/JGvVnQ7XMNNp1se8Cb/PQN5RS6hoyOjilBFF162rZmunqNRtMZzKcwq88he6HGncu6gNB02TloLdSMhD29gO5kSrO10sBiGBtW8khQPE0mFsW+ps/8dJiH0D8eWFC2V6LzUvUfT+TMLMoInsM2495uQIDAQAB
------END PUBLIC KEY-----'''
+            app_id = os.getenv('SANDBOX_APPID')      
+            folderPath=os.getenv('SANDBOX_KEY_PATH')     
+            with open( os.path.join(folderPath, "alipay_public_key.pem"), 'r') as f:
+                alipay_public_key_string = f.read()         
+            with open(os.path.join(folderPath,"alipay_private_key.pem"), 'r') as f:
+                app_private_key_string = f.read()
     else:
-        app_id = '2019061665605123'
-        alipay_public_key_string = 'MIIEowIBAAKCAQEAhHUCnphzIcEV7Al3NqgtXhReYbQ4X4smAAzMdTkbXMIP30FNqzLi8pXPPQJFmWoK2CXUlxTCEQtuFF5VHJligRbvjEwY5uwMJtAWBYFOA1wAXHUe7COSFlvhU/PPP0jue14ZRgzRC+Tj9F+05o0ZeWU/HL9zkRohFbzKNGWK5WdXZhZFQDiI1P2HOHKoIZVhtpA7qkiUzBnynmBML2bHJ8W0PZ5HKY7/mSF9v3wCP5pEfE8HJUKb6mznQm29I6mRES3vNWWGdxS4jHGwI8q56Bm/aKBDN6esC2+25goAoUaUprzv0jer37sMS5m8Et17W+/e5erXK6K641/soc+Y4QIDAQABAoIBAGDky47CjG4jteqdngRwkAdjNQuZ7ycNPjYJJsOVi8uV9lBlj/BtYBD+v8OsVsd8CATH37TJLZGUX+ksfGxYU/OEmKVzwT+jatw1mfZa+XuBoI4B6yXoe2Q5wCJOlst/iVzbn/dbRszBmnNYU5fXncvs4XchIeQCTjN9kBk2Mp3OpmNqTVoY8V4Zgy4r5RsGbz7MwgPEnD8wptSXb56J4YrC69iCh3sBmJynuylkulhiofMFrkR11F4gXh+yiuUBZ/T+QGyBYwTYow+YlYZw1sliCfAipqEpJ9d6McBXSz67cxshYO2CrzfDvPkLR0uqGVZVhZEYDkg7wvm2nmIqBNUCgYEAvPSdYsGZP+QxVI2rak0oSUVBlpp4y9Fzi6CnTrNmKNKEGCWTuournQrvdxCWPL20GxwTp023+J5UOBvRbuMtwmwJruawfwUAOCielab/331tYIKOxOOc5JVNxNex4bd6Z0/F5zj/BndOS2O+zqNlVmSwPAO7U1B8mKm4q/i1Cq8CgYEAs3R5kcpmLBghyMdUj3dwjIfc5+zWW8CoxerKkAm519MDg6EplFiXi2IJuLb2HO0f00xxukcXa3rDYMQg7fW+rHDfovq3h9u0gFiR7I21DfTJDLCn0XM7zKSjN8a1kjev2uuvEUbFHnCKrKRWEE4lcKgTHjn91gOgCX5dK/LBOW8CgYA9jZ37fr+SbZ6YQbI2Zb4a6EGuctGo66ktMf9uhshfwfwf9ZXDLh6QgPBzI+cdEFssfZ/1Xz7v8XvT71PxQHY2oIUjAak7J4Djym+mpokx36USzFT/1HnWiMCVwAIFWoS4ROdeJFYHYDQUIQEWRWoMk65JTpnmURDVlmw/MTygpwKBgHGZE7PUWeUjyY8dj0vaIebzwkUWSYN/a9cNj/iqD3it3RWgGYAMrLHQ97J0L0uUV4ccZwmyIwMojTFeNjIsU+047nhvGWrpC1QLvSPveGNDR1m/IhyWQ46B0chnA11x3uJIO2RGVlW0jDRJOynLLiwoWSHTN/oYBWC9GyHM48AFAoGBALVms3TZe6MAqf/cLnqpYn+8hmJAY+tWNQNYo/aqL8wMvlbz2cRgSa5g3CQ1YTuvmXiXaDOFE2RMfjnWR3AdCIYBc4m017PdcnhzdlEwRZkpdGyrx/7+AP2dogOCENPU1nMGcaNFk+Kqf6xbl+YTQY+SeoEQBfwCdpsfsYyVdww1'
-
-    app_private_key_string ='''-----BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEAhHUCnphzIcEV7Al3NqgtXhReYbQ4X4smAAzMdTkbXMIP30FNqzLi8pXPPQJFmWoK2CXUlxTCEQtuFF5VHJligRbvjEwY5uwMJtAWBYFOA1wAXHUe7COSFlvhU/PPP0jue14ZRgzRC+Tj9F+05o0ZeWU/HL9zkRohFbzKNGWK5WdXZhZFQDiI1P2HOHKoIZVhtpA7qkiUzBnynmBML2bHJ8W0PZ5HKY7/mSF9v3wCP5pEfE8HJUKb6mznQm29I6mRES3vNWWGdxS4jHGwI8q56Bm/aKBDN6esC2+25goAoUaUprzv0jer37sMS5m8Et17W+/e5erXK6K641/soc+Y4QIDAQABAoIBAGDky47CjG4jteqdngRwkAdjNQuZ7ycNPjYJJsOVi8uV9lBlj/BtYBD+v8OsVsd8CATH37TJLZGUX+ksfGxYU/OEmKVzwT+jatw1mfZa+XuBoI4B6yXoe2Q5wCJOlst/iVzbn/dbRszBmnNYU5fXncvs4XchIeQCTjN9kBk2Mp3OpmNqTVoY8V4Zgy4r5RsGbz7MwgPEnD8wptSXb56J4YrC69iCh3sBmJynuylkulhiofMFrkR11F4gXh+yiuUBZ/T+QGyBYwTYow+YlYZw1sliCfAipqEpJ9d6McBXSz67cxshYO2CrzfDvPkLR0uqGVZVhZEYDkg7wvm2nmIqBNUCgYEAvPSdYsGZP+QxVI2rak0oSUVBlpp4y9Fzi6CnTrNmKNKEGCWTuournQrvdxCWPL20GxwTp023+J5UOBvRbuMtwmwJruawfwUAOCielab/331tYIKOxOOc5JVNxNex4bd6Z0/F5zj/BndOS2O+zqNlVmSwPAO7U1B8mKm4q/i1Cq8CgYEAs3R5kcpmLBghyMdUj3dwjIfc5+zWW8CoxerKkAm519MDg6EplFiXi2IJuLb2HO0f00xxukcXa3rDYMQg7fW+rHDfovq3h9u0gFiR7I21DfTJDLCn0XM7zKSjN8a1kjev2uuvEUbFHnCKrKRWEE4lcKgTHjn91gOgCX5dK/LBOW8CgYA9jZ37fr+SbZ6YQbI2Zb4a6EGuctGo66ktMf9uhshfwfwf9ZXDLh6QgPBzI+cdEFssfZ/1Xz7v8XvT71PxQHY2oIUjAak7J4Djym+mpokx36USzFT/1HnWiMCVwAIFWoS4ROdeJFYHYDQUIQEWRWoMk65JTpnmURDVlmw/MTygpwKBgHGZE7PUWeUjyY8dj0vaIebzwkUWSYN/a9cNj/iqD3it3RWgGYAMrLHQ97J0L0uUV4ccZwmyIwMojTFeNjIsU+047nhvGWrpC1QLvSPveGNDR1m/IhyWQ46B0chnA11x3uJIO2RGVlW0jDRJOynLLiwoWSHTN/oYBWC9GyHM48AFAoGBALVms3TZe6MAqf/cLnqpYn+8hmJAY+tWNQNYo/aqL8wMvlbz2cRgSa5g3CQ1YTuvmXiXaDOFE2RMfjnWR3AdCIYBc4m017PdcnhzdlEwRZkpdGyrx/7+AP2dogOCENPU1nMGcaNFk+Kqf6xbl+YTQY+SeoEQBfwCdpsfsYyVdww1
------END RSA PRIVATE KEY-----'''
+            app_id = os.getenv('PRODUCTION_APPID')   
+            folderPath=os.getenv('PRODUCTION_KEY_PATH')     
+            with open( os.path.join(folderPath, "alipay_public_key.pem"), 'r') as f:
+                alipay_public_key_string = f.read()         
+            with open(os.path.join(folderPath,"alipay_private_key.pem"), 'r') as f:
+                app_private_key_string = f.read()
     pay = AliFacePay(app_id, app_private_key_string, alipay_public_key_string, None, sandbox)
 
     #out_trade_no = 'out_trade_no20190616_13'

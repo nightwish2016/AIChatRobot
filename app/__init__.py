@@ -90,22 +90,19 @@ def create_app():
     
     sandbox = False
     if sandbox:
-            app_id = '9021000137634851'
-            alipay_public_key_string = '''-----BEGIN PUBLIC KEY-----
-    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo3XUTdshfLg3a415orD2APguhRTdN/fLeVetJndYJYxhE33n7MHdR6zntHc/z4dBuekxBivUoQ5kkN+iFBSa3DFWz5qIsOqizdjUrvFf+xVvgcw3AteKx7MslCIhRACzKweLzMkGdPt+MRTuZIOE01KbeSu7yR5DaYuwIFSYJAmpzG0rN37TiaJz9dsQPF/JGvVnQ7XMNNp1se8Cb/PQN5RS6hoyOjilBFF162rZmunqNRtMZzKcwq88he6HGncu6gNB02TloLdSMhD29gO5kSrO10sBiGBtW8khQPE0mFsW+ps/8dJiH0D8eWFC2V6LzUvUfT+TMLMoInsM2495uQIDAQAB
-    -----END PUBLIC KEY-----'''
-            app_private_key_string ='''-----BEGIN RSA PRIVATE KEY-----
-    MIIEowIBAAKCAQEAhHUCnphzIcEV7Al3NqgtXhReYbQ4X4smAAzMdTkbXMIP30FNqzLi8pXPPQJFmWoK2CXUlxTCEQtuFF5VHJligRbvjEwY5uwMJtAWBYFOA1wAXHUe7COSFlvhU/PPP0jue14ZRgzRC+Tj9F+05o0ZeWU/HL9zkRohFbzKNGWK5WdXZhZFQDiI1P2HOHKoIZVhtpA7qkiUzBnynmBML2bHJ8W0PZ5HKY7/mSF9v3wCP5pEfE8HJUKb6mznQm29I6mRES3vNWWGdxS4jHGwI8q56Bm/aKBDN6esC2+25goAoUaUprzv0jer37sMS5m8Et17W+/e5erXK6K641/soc+Y4QIDAQABAoIBAGDky47CjG4jteqdngRwkAdjNQuZ7ycNPjYJJsOVi8uV9lBlj/BtYBD+v8OsVsd8CATH37TJLZGUX+ksfGxYU/OEmKVzwT+jatw1mfZa+XuBoI4B6yXoe2Q5wCJOlst/iVzbn/dbRszBmnNYU5fXncvs4XchIeQCTjN9kBk2Mp3OpmNqTVoY8V4Zgy4r5RsGbz7MwgPEnD8wptSXb56J4YrC69iCh3sBmJynuylkulhiofMFrkR11F4gXh+yiuUBZ/T+QGyBYwTYow+YlYZw1sliCfAipqEpJ9d6McBXSz67cxshYO2CrzfDvPkLR0uqGVZVhZEYDkg7wvm2nmIqBNUCgYEAvPSdYsGZP+QxVI2rak0oSUVBlpp4y9Fzi6CnTrNmKNKEGCWTuournQrvdxCWPL20GxwTp023+J5UOBvRbuMtwmwJruawfwUAOCielab/331tYIKOxOOc5JVNxNex4bd6Z0/F5zj/BndOS2O+zqNlVmSwPAO7U1B8mKm4q/i1Cq8CgYEAs3R5kcpmLBghyMdUj3dwjIfc5+zWW8CoxerKkAm519MDg6EplFiXi2IJuLb2HO0f00xxukcXa3rDYMQg7fW+rHDfovq3h9u0gFiR7I21DfTJDLCn0XM7zKSjN8a1kjev2uuvEUbFHnCKrKRWEE4lcKgTHjn91gOgCX5dK/LBOW8CgYA9jZ37fr+SbZ6YQbI2Zb4a6EGuctGo66ktMf9uhshfwfwf9ZXDLh6QgPBzI+cdEFssfZ/1Xz7v8XvT71PxQHY2oIUjAak7J4Djym+mpokx36USzFT/1HnWiMCVwAIFWoS4ROdeJFYHYDQUIQEWRWoMk65JTpnmURDVlmw/MTygpwKBgHGZE7PUWeUjyY8dj0vaIebzwkUWSYN/a9cNj/iqD3it3RWgGYAMrLHQ97J0L0uUV4ccZwmyIwMojTFeNjIsU+047nhvGWrpC1QLvSPveGNDR1m/IhyWQ46B0chnA11x3uJIO2RGVlW0jDRJOynLLiwoWSHTN/oYBWC9GyHM48AFAoGBALVms3TZe6MAqf/cLnqpYn+8hmJAY+tWNQNYo/aqL8wMvlbz2cRgSa5g3CQ1YTuvmXiXaDOFE2RMfjnWR3AdCIYBc4m017PdcnhzdlEwRZkpdGyrx/7+AP2dogOCENPU1nMGcaNFk+Kqf6xbl+YTQY+SeoEQBfwCdpsfsYyVdww1
-    -----END RSA PRIVATE KEY-----'''
+            app_id = os.getenv('SANDBOX_APPID')      
+            folderPath=os.getenv('SANDBOX_KEY_PATH')     
+            with open( os.path.join(folderPath, "alipay_public_key.pem"), 'r') as f:
+                alipay_public_key_string = f.read()         
+            with open(os.path.join(folderPath,"alipay_private_key.pem"), 'r') as f:
+                app_private_key_string = f.read()
     else:
-            app_id = '2021004147613257'
-            alipay_public_key_string = '''-----BEGIN PUBLIC KEY-----
-    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAg72eX+UrgOmblsV/EWpNyTtJPhQ2TVi6ZQAIX6Q2m8RdMUcEH7/aSuSlMqsbnDVrj+QafYpsI4sj6VOCle4PPg8E51NpuC2qMXLlQ4jlNcVu5CxDXPn/pk6zSL2Ptb0LcIird3M76+KHJmTjWFmUUxT+MCVOCP5OcV413k3WtZWoSuVO4AmRXioRUwNQZBxcodLZDNI3OpzG9a0ibVF3FmIj13C1uLDqqSc/VjdSX0KrzClI1BmDhEnmX9YmleMohG81yVJG5v1geG3SErYsa+VAhhrb+Ta4avH3TccIQA/8Fix66xfwF0v8FGFQUq5j3yGMWJ4CbR387irk52zMkwIDAQAB
-    -----END PUBLIC KEY-----'''        
-
-            app_private_key_string ='''-----BEGIN RSA PRIVATE KEY-----
-    MIIEpQIBAAKCAQEAlvZAeljS6UJy4whts05ekFywZ/zyrl7sOCZWro8JCMdENTW9Hbetaq7xtNeb92iH/JZ2Lyobl5TDkHw6NsJJVVv8Qptk5fJikJiF0n8UtN+/P6jrY3CP4tbE6dl+PrIL8KtHQWL0MBKbr9Uegdihku/S4ApslLC4BiaghRIKa5dGia2awNQjtozI/IW9wq4qnrRBAcuj/jsPXR8GcW/TyD2gZ/rWfqD6NflRYVAFt9STbCiHOYN/a8Zo9ko+GOXW0apCXeDyCpp0+t2k1/pxS176FTMTH+INpDpA7WmsQ8RbMBItahVhj6visg9eZymIF4lctSPun99cCBprdk01bQIDAQABAoIBAQCMY5fU79O8r1oOPqFeNcyFbl1zZ238sTP2h9jm3wgkzMNmxIIKJ+2zH9ySNEzMSb7lLLvd4sfkMKmqLY0prYbrRe8TtlWf7siw9dbFyf7ksou11Q6K3HxDFT3sx6G7BnNKLs7GRRMXvcZhP83uLRsdfcBbL/aIVMvelH+FISDlqkxnCB5nbrtft1FsTIlKqNedQNGmRANoYfuqRnUZ5pgZCtIxyOyiKLSAD4Mzu6ZaLaUu7iEmhuyYB128pVDtzPRDqA9o+yufmsV9kofT6g7ld3Gz78IfKLV76njqXDk+t0knX4DXx9uLLklOJWDaA3+3F3/E7kpiKRsV+Sb1IZYBAoGBAMkj/g5QyJWrdQFm7/BDQrlH3tWF5MRA9F9MshxNnf8IklGMJesRUK12rk27Enhypq4UvqxpWnivAbJs48JXj40pMgi50RHLVj3GcTNpuQ96eaa6ig2+JqBaeqd9xeOAAztqnorWW63ecY2NNFC70sYFOBZwPavx8oH9tvCcA/WBAoGBAMAisRv6lMk2SnGkYy+PC2VZ1t19dz8NcVi1PTSJDurDrk1KGFvpn0oI54tOxthEwUszxaQSNfVwwSTJupF3aTkEkd4+rNurb9x9/A98DMXzXNRjT6H3vZ3mikFfL7RWqP5Xi9YxuCrcYQUpszVslXmXd+SuHC76TpBcjiSym23tAoGBALwF8ETTkV4P5BWGcz7msSXgIFb7jelDSu0XFdxNVieEjLq8RunhysgMjE3PVSnRCyzp6X/kEBWGixCOp64RCfkMDGCJyv1WVezzZviHmN32QGfyMoE8QoFdcxDFCspq7RqKxV/Fl/gFW6LV35Skrxg64r5e99eXGXoYgP2U6kKBAoGAIYhsfMOZIBz3lSnpna1Lgd7SH0n8e+aut5q6Gecp0VNhol+iLLhzcopnTurqzWgCjEt23RHIlROewfrrMuQyWx8vDijGJnifR049pb4yxIGa2/6RMWV5lItd6dbhDoppaCqDX1jCGcjorev/OP3AgL4s0J6KkLBi8dMVg9YgRmkCgYEAhrTE1d8p/5y75PCcyKg314Q2CYzrzN9rfTPsKgRAlqlK+FyAwaDZcYZTCFrZaYIP8y0RUU7LJHzMYGk89tHtcdjncr82Atu7pFBHpe+r2ReD1JtfYxjaRVQo4U5j75nJfkTZFDiV1RNpwci29MrMRwUJEx573mrbGDg9SRpM6uY=
-    -----END RSA PRIVATE KEY-----'''
+            app_id = os.getenv('PRODUCTION_APPID')   
+            folderPath=os.getenv('PRODUCTION_KEY_PATH')     
+            with open( os.path.join(folderPath, "alipay_public_key.pem"), 'r') as f:
+                alipay_public_key_string = f.read()         
+            with open(os.path.join(folderPath,"alipay_private_key.pem"), 'r') as f:
+                app_private_key_string = f.read()
     ali_face_pay = AliFacePay(app_id, app_private_key_string, alipay_public_key_string,
                     'https://nightwish.tech/alipay_nofity', sandbox)
     app.ali_face_pay=ali_face_pay
