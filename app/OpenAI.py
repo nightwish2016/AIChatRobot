@@ -232,11 +232,12 @@ class OpenAI:
         message=""
         
         try:
+            self.openai.api_key=self.open_api_key
+            self.openai.base_url=self.openai_base_url
             response = self.openai.images.generate(
                 model=model,
                 prompt=prompt,
-            size=pixl,
-                quality="standard",
+            size=pixl,                
                 n=1
             )
             sessionid=str(uuid.uuid4())
