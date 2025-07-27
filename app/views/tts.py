@@ -9,10 +9,19 @@ ttsview_bp = Blueprint('tts', __name__)
 def ttsPage():
     available_voices = [
         {'name': 'Kore', 'display_name': 'Kore (默认)'},
-        {'name': 'achernar', 'display_name': 'achernar'},
-        {'name': 'Aero', 'display_name': 'Aero'},
-        {'name': 'Cyrus', 'display_name': 'Cyrus'},
-        {'name': 'Cirrus', 'display_name': 'Cirrus'},
+        {'name': 'Zephyr', 'display_name': 'Zephyr'},
+        {'name': 'Puck', 'display_name': 'Puck'},
+        {'name': 'Charon', 'display_name': 'Charon'},
+        {'name': 'Fenrir', 'display_name': 'Fenrir'},
+        {'name': 'Leda', 'display_name': 'Leda'},
+        {'name': 'Orus', 'display_name': 'Orus'},
+        {'name': 'Aoede', 'display_name': 'Aoede'},
+        {'name': 'Callirrhoe', 'display_name': 'Callirrhoe'},
+        {'name': 'Autonoe', 'display_name': 'Autonoe'},
+        {'name': 'Enceladus', 'display_name': 'Enceladus'},
+        {'name': 'Iapetus', 'display_name': 'Iapetus'},
+        {'name': 'Umbriel', 'display_name': 'Umbriel'},
+
         # You can add more voices if they become available or you find others
     ]
     if  'user_name' in session:
