@@ -9,10 +9,4 @@ pyenv shell myenv3.12  # 或用 source activate
 git pull
 pkill -f gunicorn
 sleep 2
-
-nohup gunicorn -w 4 -b 0.0.0.0:5000 \
-  --timeout 120 \
-  --error-logfile /root/myai/gunicorn/err.log \
-  --access-logfile /root/myai/gunicorn/gunicorn.log \
-  "app:create_app" \
-  --log-level debug > /dev/null 2>&1 &
+gunicorn -w 4 -b 0.0.0.0:5000 --timeout 120 --error-logfile /root/myai/gunicorn/err.log --log-file /root/myai/gunicorn/gunicorn.log "app:create_app()" --log-level debug &
