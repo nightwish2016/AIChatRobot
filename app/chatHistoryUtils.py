@@ -11,3 +11,5 @@ class chatHistoryUtils:
     def insertImageHistory(self ,pars   ):
         self.db.insertImageHistory(pars)
 
+    def insertTtsHistory(self ,pars):
+        self.db.insertTtsHistory(pars)

@@ -11,6 +11,7 @@ from email.mime.text import MIMEText
 from email.header import Header
 from email.utils import formataddr
 import logging
+import os
 # import urllib.request
 # import ssl
 logger = logging.getLogger('log')
@@ -22,7 +23,7 @@ class SendMail:
         # username，通过控制台创建的发信地址
         username = 'admin@mail.nightwish.tech'
         # password，通过控制台创建的SMTP密码
-        password = 'XXX'
+        password = os.getenv('EMAIL_PASSWORD')
         # 自定义的回信地址，与控制台设置的无关。邮件推送发信地址不收信，收信人回信时会自动跳转到设置好的回信地址。
         replyto = 'kzhou2017@outlook.com'
         # 显示的To收信地址

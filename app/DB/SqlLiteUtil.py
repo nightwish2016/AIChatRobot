@@ -1,11 +1,13 @@
 import sqlite3
 import datetime
+import os
 
 class SqlLiteUtil:
     def __init__(self):
         # self.conn = sqlite3.connect('C:\\Users\\kzhou\OneDrive - GREEN DOT CORPORATION\\Documents\\GitRepo\\MyCode\\AIWEB\\DB\\OpenAI.db')
         # self.conn = sqlite3.connect('C:\\Users\\Kevin\Documents\\ai\\AIWEB\\DB\\OpenAI.db')
-        self.conn = sqlite3.connect('/root/myai/DB/OpenAI.db')
+        self.conn= sqlite3.connect(os.getenv("DB_PATH"))
+        # self.conn = sqlite3.connect('/root/myai/DB/OpenAI.db')
         # self.conn = sqlite3.connect('OpenAI.db')
         self.conn.row_factory = sqlite3.Row 
         self.cursor = self.conn.cursor()
@@ -39,6 +41,13 @@ class SqlLiteUtil:
     def insertChatHistory(self,params):
         # (userId,role,model,promptTokens,complettionTokens,totalTokens,created,GptContent,prompt,sessionid)
         self.cursor.execute("INSERT INTO chatHistory (SessionId ,UserId,Role ,Model ,PromptTokens ,CompletionTokens ,TotalTokens,Created ,GptContent , Prompt,chargeStatus ) VALUES (?, ?,?,?,?, ?,?,?,?, ?,?)", params)
+        self.conn.commit()
+        self.cursor.close()
+        self.conn.close()
+    
+    def insertTtsHistory(self,params):
+        # (userId,role,model,promptTokens,complettionTokens,totalTokens,created,GptContent,prompt,sessionid)
+        self.cursor.execute("INSERT INTO ttsHistory (UserId ,Model ,PromptTokens ,CompletionTokens ,TotalTokens,Created,chargeStatus  ) VALUES (?, ?,?,?,?, ?,?)", params)
         self.conn.commit()
         self.cursor.close()
         self.conn.close()

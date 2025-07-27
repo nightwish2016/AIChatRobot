@@ -1,55 +1,185 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ko" lang="ko">
+<html lang="zh-CN">
 <head>
-<title>支付宝当面付</title>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-<!-- <script type="text/javascript" src="{{url_for('static',filename='qrcode.js')}}"></script> -->
-<script src="{{ url_for('static', filename='js/common/qrcode.js') }}"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付宝扫码支付</title>
+    <script src="{{ url_for('static', filename='js/common/qrcode.js') }}"></script>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .order-info {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .qr-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .qr-image {
+            max-width: 200px;
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .payment-status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #667eea;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #28a745;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px;
+                margin: 20px;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .qr-image {
+                max-width: 180px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px;
+                margin: 15px;
+            }
+
+            h1 {
+                font-size: 1.4rem;
+            }
+
+            .qr-image {
+                max-width: 160px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <div class="icon">💳</div>
+        
+        <h1>请使用支付宝扫码付款</h1>
+        
+        <div class="order-info">
+            订单编号: {{ out_trade_no }}
+        </div>
+        
+        <div class="qr-container">
+            <div id="qrcode"></div>
+            <img id="qr" class="qr-image" src="{{ qr_image_path }}" alt="支付宝二维码"/>
+        </div>
+        
+        <div class="payment-status">
+            <span class="loading"></span>
+            等待支付中...
+        </div>
+    </div>
 
+    <script type="text/javascript">
+        let orderId = '{{ out_trade_no }}';
+        let i = 0;
+        
+        function checkPaymentStatus(i) {
+            fetch(`/wait_pay/${orderId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.pay_success) {
+                        window.location.href = "/pay_success";  // 支付成功页面
+                    } else if (data.status === 'failed') {
+                        window.location.href = "/pay_failed";  // 支付失败页面
+                    } else {
+                        // 如果是pending，继续轮询
+                        setTimeout(checkPaymentStatus, 2000);  // 每2秒轮询一次
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // 处理错误
+                });
+        }
 
-  
-<div align="center">
-  <h1>请使用支付宝扫码付款</h1>
-  <p>订单编号: {{ out_trade_no }}</p>
-  <div id="qrcode"></div>
-  <div><img id="qr" src="{{ qr_image_path}}" alt="Logged In" width="30%"/> </div>
-</div>
-
-<script type="text/javascript">
-
-let orderId = '{{ out_trade_no }}';  // 在渲染页面时传递订单ID
-    let i=0
-    function checkPaymentStatus(i) {
-        fetch(`/wait_pay/${orderId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.pay_success ) {
-                    window.location.href = "/pay_success";  // 支付成功页面
-                } else if (data.status === 'failed') {
-                    window.location.href = "/pay_failed";  // 支付失败页面
-                } else {
-                    // 如果是pending，继续轮询
-                  
-                        
-                        // i++
-                        // console.log(i)
-                    setTimeout(checkPaymentStatus, 2000);  // 每2秒轮询一次
-                
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // 处理错误
-            });
-    }
-
-    // 在页面加载完成后开始轮询
-    document.addEventListener('DOMContentLoaded', function () {
-        checkPaymentStatus();
-    });
-
-</script>
+        // 在页面加载完成后开始轮询
+        document.addEventListener('DOMContentLoaded', function () {
+            checkPaymentStatus();
+        });
+    </script>
 </body>
+</html>

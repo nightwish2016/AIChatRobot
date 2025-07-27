@@ -52,8 +52,16 @@ function loginButtonDisplayProcess() {
         displayLoginStatus();
     };
 
-    document.getElementById('loggedInIcon').onclick = function() {
+    document.getElementById('loggedInIcon').onmouseenter = function() {
+        
         document.getElementById('popup').style.display = 'block';
+        
+       
+    };
+
+    document.getElementById('popup').onmouseleave = function() {               
+        document.getElementById('popup').style.display = 'none';
+        
     };
 
     document.getElementById('logoutButton').onclick = function() {              

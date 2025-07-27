@@ -1,67 +1,163 @@
 
         /* 登录按钮的样式 */
         #loginButton {
-            /* position: fixed; */
-            right: 10px;
-            top: 10px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            background-color: #007bff; /* 蓝色背景 */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
+            padding: 10px 20px;
+            border-radius: 8px;
             font-size: 16px;
-            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.5);
-    
-         
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            margin: 0;
         }
-        
-        
+
         #loginButton:hover {
-            background-color: #0056b3; /* 鼠标悬停时的背景色 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+
+        #loginButton:active {
+            transform: translateY(0);
         }
 
         /* 已登录图标的样式 */
         #loggedInIcon {
-            position: fixed;
-            right: 10px;
-            top: 10px;
-            display: none; /* 默认不显示 */
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
-            box-shadow: 0px 0px 5px #888888;
             cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            display: none;
+        }
+
+        #loggedInIcon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
         /* 小窗口的样式 */
         #popup {
-            position: fixed;
-            right: 10px;
+            position: absolute;
+            right: 0;
             top: 60px;
-            width: 200px;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            width: 250px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
             display: none;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #balance {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
             padding: 10px;
-            box-shadow: 0px 0px 10px #888888;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        #fund {
+            margin-bottom: 15px;
+        }
+
+        #fund button {
+            width: 100%;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        #fund button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+            background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
         }
 
         /* 退出按钮样式 */
         #logoutButton {
-            display: block;
-            text-align: right;
-            background-color: #f44336;
+            width: 100%;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
             color: white;
             border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
             cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
         }
 
         #logoutButton:hover {
-            background-color: #d32f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            #loginButton {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+            
+            #loggedInIcon {
+                width: 40px;
+                height: 40px;
+            }
+            
+            #popup {
+                width: 220px;
+                right: -10px;
+                padding: 15px;
+            }
+            
+            #balance {
+                font-size: 14px;
+                padding: 8px;
+            }
+            
+            #fund button, #logoutButton {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #popup {
+                width: 200px;
+                right: -20px;
+            }
         }
   

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/loginButton.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/displayWindow.css') }}">
+    <script src="{{ url_for('static', filename='js/common/loginButton.js') }}"></script>
+    <title>文本转语音</title>
+    <style>
+        .tts-content {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .tts-form {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+            font-size: 1rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .audio-controls {
+            margin-top: 30px;
+            padding: 25px;
+            border-top: 1px solid #e1e5e9;
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 12px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .audio-controls h3 {
+            color: #333;
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        audio {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .message {
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .error-message {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+        }
+
+        .success-message {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.2);
+        }
+
+        #loading {
+            display: none;
+            margin: 15px 0;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #667eea;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 确保TTS页面不受displayWindow.css影响 */
+        .chat-container .tts-content {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .chat-container .tts-form {
+            position: relative;
+            z-index: 5;
+        }
+
+        /* 确保音频控件可见 */
+        .audio-controls {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .tts-content {
+                padding: 20px;
+            }
+
+            .tts-form {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+                margin-bottom: 25px;
+            }
+
+            textarea {
+                min-height: 100px;
+                padding: 12px;
+            }
+
+            .generate-btn {
+                padding: 12px 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tts-content {
+                padding: 15px;
+            }
+
+            .tts-form {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="upMenu">
+            <div id="welcome"><p>欢迎, {{ user_name }}!</p></div>
+            <div class="otherUrl">
+                <a href="/chat">AI 聊天</a>
+                <a href="/image">AI 图像生成</a>
+            </div>
+            <div class="login-section">
+                <form id="login" action="/loginPage?origin=/tts" method="post">
+                    <button id="loginButton">登录</button>
+                    <img id="loggedInIcon" src="{{ url_for('static', filename='image/login.png') }}" alt="已登录"/> 
+                </form>
+            </div>   
+        </div>
+        
+        <!-- 用户信息弹窗 -->
+        <div id="popup">    
+            <div id="balance">余额: ¥{{balance}}</div>  
+            <div id="fund">
+                <form action="/orderPreCreate">
+                    <button id="fund" type="submit">充值</button>
+                </form>
+            </div>        
+            <form action="/logout">
+                <button id="logoutButton" type="submit">登出</button>
+            </form>
+        </div>
+
+        <!-- TTS 内容区域 -->
+        <div class="tts-content">
+            <div class="tts-form">
+                <h1>文本转语音</h1>
+                
+                <div class="input-group">
+                    <label for="textInput">输入文本</label>
+                    <textarea id="textInput" placeholder="请输入您想转换成语音的文本..."></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="voiceSelect">选择声音</label>
+                    <select id="voiceSelect">
+                        {% for voice in voices %}
+                        <option value="{{ voice.name }}" {% if voice.name == 'Kore' %}selected{% endif %}>{{ voice.display_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button id="btn" class="generate-btn" onclick="generateAudio()">生成语音</button>
+                
+                <div id="loading">
+                    <span class="loading-spinner"></span>
+                    正在生成语音，请稍候...
+                </div>
+                
+                <div id="errorMessage" class="message error-message"></div>
+                <div id="successMessage" class="message success-message"></div>
+
+                <div class="audio-controls" id="audioControls">
+                    <h3>播放与下载</h3>
+                    <audio id="audioPlayer" controls></audio>
+                    <button class="download-btn" onclick="downloadAudio()">下载音频</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        loginButtonDisplayProcess() 
+        
+        async function generateAudio() {
+            const textInput = document.getElementById('textInput');
+            const voiceSelect = document.getElementById('voiceSelect');
+            const audioPlayer = document.getElementById('audioPlayer');
+            const audioControls = document.getElementById('audioControls');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const loadingMessage = document.getElementById('loading');
+            const generateBtn = document.getElementById('btn');
+
+            // 清除之前的消息
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            audioControls.style.display = 'none';
+            audioPlayer.src = '';
+
+            const text = textInput.value.trim();
+            const selectedVoice = voiceSelect.value;
+
+            if (!text) {
+                showMessage(errorMessage, '请输入文本才能生成语音！');
+                return;
+            }
+
+            // 显示加载状态
+            loadingMessage.style.display = 'block';
+            generateBtn.disabled = true;
+            generateBtn.textContent = '生成中...';
+
+            try {
+                const formData = new FormData();
+                formData.append('text', text);
+                formData.append('voice', selectedVoice);
+
+                const response = await fetch('/generate_audio', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const audioBlob = await response.blob();
+                    console.log('audioBlob.type:', audioBlob.type);
+                    console.log('audioBlob.size:', audioBlob.size);
+
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    console.log('audioUrl:', audioUrl);
+
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.load(); // 强制刷新
+                    audioControls.style.display = 'flex';
+                    console.log('音频控件显示状态:', audioControls.style.display);
+                    console.log('音频控件可见性:', window.getComputedStyle(audioControls).display);
+                    console.log('音频控件位置:', audioControls.getBoundingClientRect());
+                    showMessage(successMessage, '语音生成成功！');
+                } else {
+                    const errorText = await response.text();
+                    showMessage(errorMessage, `生成失败: ${errorText}`);
+                }
+            } catch (error) {
+                showMessage(errorMessage, `网络或服务器错误: ${error.message}`);
+            } finally {
+                loadingMessage.style.display = 'none';
+                generateBtn.disabled = false;
+                generateBtn.textContent = '生成语音';
+            }
+        }
+
+        function showMessage(element, message) {
+            element.textContent = message;
+            element.style.display = 'block';
+        }
+
+        function downloadAudio() {
+            const audioPlayer = document.getElementById('audioPlayer');
+            const audioUrl = audioPlayer.src;
+            if (audioUrl && audioUrl !== '') {
+                const a = document.createElement('a');
+                a.href = audioUrl;
+                a.download = 'generated_audio.wav';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                // 不要立刻revokeObjectURL(audioUrl);
+            } else {
+                alert('没有可下载的音频。请先生成语音。');
+            }
+        }
+
+        // 回车键生成语音
+        document.getElementById('textInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && event.ctrlKey) {
+                generateAudio();
+            }
+        });
+    </script>
+</body>
+</html>

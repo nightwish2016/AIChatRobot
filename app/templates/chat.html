@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chat with GPT</title>
+    <title>AI Chat Assistant</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/atom-one-dark.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@3.0.7/marked.min.js"></script>
@@ -21,92 +21,77 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
  
-    
-  
 </head>
-<body >
-    
-    
-
-    
+<body>
     <div class="chat-container">
         <div class="upMenu">
-            <div id="welcome"><p>Welcome, {{ user_name }}!</p></div>  
-            <!-- <div class="otherUrl"><a href="/loginPage">Get start</a></div>             -->
-            <div class="otherUrl"><a href="/image">AI Image</a></div>   
-               
-            
-        <div >
-            <!-- 登录按钮和已登录图标 -->
-            <form id="login" action="/loginPage?origin=/chat" method="post" >
-            <button id="loginButton">Login</button>
-            <img id="loggedInIcon" src="{{ url_for('static', filename='image/login.png') }}" alt="Logged In"/> 
-            </form>
-        </div>
-                                            
+            <div id="welcome"><p>欢迎, {{ user_name }}!</p></div>  
+            <div class="otherUrl">
+                <a href="/image">AI 图像生成</a>
+                <a href="/tts">文字转语音</a>
+            </div>
+            <div class="login-section">
+                <form id="login" action="/loginPage?origin=/chat" method="post">
+                    <button id="loginButton">登录</button>
+                    <img id="loggedInIcon" src="{{ url_for('static', filename='image/login.png') }}" alt="已登录"/> 
+                </form>
+            </div>
         </div>
      
-       
-    
-    <!-- 小窗口和退出按钮 -->
-    <div id="popup">  
-        <div id="balance">Balance:¥{{balance}}</div>  
-        <br> 
-        <div id="fund">
-        <form action="/orderPreCreate" >
-            <button  id="fund" type="submit">充值</button>
-        </form>
-    </div>  
-           
-        <br>  
-        <form action="/logout" >
-            <button  id="logoutButton" type="submit">登出</button>
-        </form>
-        
-    </div>
+        <!-- 用户信息弹窗 -->
+        <div id="popup">  
+            <div id="balance">余额: ¥{{balance}}</div>  
+            <div id="fund">
+                <form action="/orderPreCreate">
+                    <button id="fund" type="submit">充值</button>
+                </form>
+            </div>  
+            <form action="/logout">
+                <button id="logoutButton" type="submit">登出</button>
+            </form>
+        </div>
 
+        <!-- 聊天历史记录 -->
         <div id="history"></div>
         <div id="guidDisplay" style="display: none;"></div>      
-        <textarea id="prompt" rows="4" placeholder="Enter your message here..."></textarea>
-        <label for="model-select">Choose a model:</label>
-        <select id="model-select"> 
-            <option value="deepseek-chat">DeepSeek</option>            
-            <option value="gpt-4o-mini">GPT-4O-mini</option>                                
-            <option value="gpt-4o">GPT-4O</option>                                       
-        </select>
-        <br>   
-        <button  onclick="sendToChatGPT()">Send</button>
+        
+        <!-- 输入区域 -->
+        <div class="input-section">
+            <textarea id="prompt" rows="4" placeholder="请输入您的消息..."></textarea>
+            <div class="controls">
+                <div class="select-group">
+                    <label for="model-select">选择模型:</label>
+                    <select id="model-select"> 
+                        <option value="deepseek-chat">DeepSeek</option>            
+                        <option value="gpt-4o-mini">GPT-4O-mini</option>                                
+                        <option value="gpt-4o">GPT-4O</option>                                       
+                    </select>
+                </div>
+                <button onclick="sendToChatGPT()">发送</button>
+            </div>
+        </div>
     </div>
 		
-		
-        
-        
-       
-               
-   
-        <script>    
-        
-        
-                    function generateGUID() {
-                function s4() {
+    <script>    
+        function generateGUID() {
+            function s4() {
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-                }
-                return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-                    s4() + '-' + s4() + s4() + s4();
             }
+            return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+                s4() + '-' + s4() + s4() + s4();
+        }
 
-            function showGUID() {
-                var guid = generateGUID();
-                document.getElementById("guidDisplay").textContent = guid;
-            }
-            showGUID()
-            
+        function showGUID() {
+            var guid = generateGUID();
+            document.getElementById("guidDisplay").textContent = guid;
+        }
+        showGUID()
+        
         loginButtonDisplayProcess()
   
-       let historyField = document.getElementById('history');
-       sendRequestByEnter('prompt','keydown')
-                                     
-			
+        let historyField = document.getElementById('history');
+        sendRequestByEnter('prompt','keydown')
+                                    
     </script>
 </body>
 </html>

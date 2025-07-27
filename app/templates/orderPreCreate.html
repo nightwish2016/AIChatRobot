@@ -3,124 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>充值页面</title>
+    <title>账户充值</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        /* 全局样式重置 */
+        * {
             margin: 0;
             padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f4f4f4;
-        }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            width: 300px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 8px;
             box-sizing: border-box;
         }
-        .form-group input[type="number"] {
-            margin-top: 10px;
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
         }
-        .submit-btn {
+
+        .container {
+            width: 90%;
+            max-width: 450px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .balance-display {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
             width: 100%;
-            padding: 10px;
-            background-color: #007bff;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input[readonly] {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 4px;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
             cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            width: 100%;
+            margin-top: 10px;
         }
-        input[readonly]{
-background-color: #f1f1f5
-}
- 
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .other-amount {
+            margin-top: 15px;
+            display: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px;
+                margin: 20px;
+            }
+
+            h2 {
+                font-size: 1.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px;
+                margin: 15px;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
-   
     <div class="container">
-        <div class="otherUrl">       
-            <a href="/chat">AI chat</a>
+        <a href="/chat" class="nav-link">← 返回AI聊天</a>
+        
+        <h2>账户充值</h2>
+        
+        <div class="balance-display">
+            当前余额: ¥{{balance}}
         </div>
-        <h2>Fund</h2>
+        
         <form id="rechargeForm" action="/create_trade" method="get">
             <div class="form-group">
-                <label for="balance">Current Balance:${{balance}}</label>   
+                <label for="user_email">用户邮箱</label>
+                <input type="text" readonly="true" id="user_email" name="user_email" value="{{ user_email }}">
             </div>
+            
             <div class="form-group">
-                <label for="userEmail">User Email:</label>   
-                <input type="text" readonly="true" id="user_email" name="user_email" value="{{ user_email }}"> 
-            </div>
-            <div class="form-group">
-                <label for="amount">Load Amount</label>
+                <label for="amount">充值金额</label>
                 <select id="amount" name="amount" required>
-                    <option value="">Choose</option>
-					
-					<option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="other">Other</option>
-            </select>
-            <input type="text" id="otherAmount" name="otherAmount" style="display:none" placeholder="请输入金额">
-        </div>
-        <button type="submit" class="submit-btn">充值</button>
-    </form>
-</div>
-<script>
-    const amountSelect = document.getElementById('amount');
-    const otherAmountInput = document.getElementById('otherAmount');
+                    <option value="">请选择充值金额</option>
+                    <option value="10">¥10</option>
+                    <option value="20">¥20</option>
+                    <option value="50">¥50</option>
+                    <option value="100">¥100</option>
+                    <option value="other">其他金额</option>
+                </select>
+                <div class="other-amount" id="otherAmount">
+                    <input type="number" id="otherAmountInput" name="otherAmount" placeholder="请输入自定义金额" min="1" step="0.01">
+                </div>
+            </div>
+            
+            <button type="submit">确认充值</button>
+        </form>
+    </div>
 
-    amountSelect.addEventListener('change', function() {
-        if (this.value === 'other') {
-            otherAmountInput.style.display = 'block';
-            otherAmountInput.required = true; // Make otherAmount required when visible
-        } else {
-            otherAmountInput.style.display = 'none';
-            otherAmountInput.required = false; // Remove required attribute when hidden
-            otherAmountInput.value = ''; // Clear the value when hidden
-        }
-    });
+    <script>
+        const amountSelect = document.getElementById('amount');
+        const otherAmountDiv = document.getElementById('otherAmount');
+        const otherAmountInput = document.getElementById('otherAmountInput');
 
-    // Handle form submit
-    const form = document.getElementById('rechargeForm');
-    // form.addEventListener('submit', function(event) {
-    //     event.preventDefault(); // Prevent the default form submission
+        amountSelect.addEventListener('change', function() {
+            if (this.value === 'other') {
+                otherAmountDiv.style.display = 'block';
+                otherAmountInput.required = true;
+            } else {
+                otherAmountDiv.style.display = 'none';
+                otherAmountInput.required = false;
+                otherAmountInput.value = '';
+            }
+        });
 
-    //     // const username = document.getElementById('username').value;
-    //     let amount = amountSelect.value;
-        
-    //     if (amount === 'other') {
-    //         amount = otherAmountInput.value;
-    //     }
-
-    //     // if (!username || !amount) {
-    //     //     alert('请输入用户名和金额');
-    //     //     return;
-    //     // }
-
-    //     // Here you can add an AJAX request to send the form data to your server
-
-    //     // alert(`用户名: ${username}\n充值金额: ${amount}`);
-    // });
-</script>
+        // 表单提交验证
+        document.getElementById('rechargeForm').addEventListener('submit', function(event) {
+            const amount = amountSelect.value;
+            
+            if (amount === 'other') {
+                const customAmount = otherAmountInput.value;
+                if (!customAmount || customAmount <= 0) {
+                    alert('请输入有效的充值金额');
+                    event.preventDefault();
+                    return;
+                }
+            } else if (!amount) {
+                alert('请选择充值金额');
+                event.preventDefault();
+                return;
+            }
+        });
+    </script>
 </body>
 </html>

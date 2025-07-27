@@ -5,6 +5,7 @@ import logging
 from cryptography.fernet import Fernet
 from flask_cors import CORS
 from app.OpenAI import OpenAI
+from app.GeminiAPI import GeminiAPI
 from datetime import timedelta
 from logging.handlers import RotatingFileHandler
 from logging.handlers import TimedRotatingFileHandler
@@ -86,6 +87,7 @@ def create_app():
     cipher = Fernet(secretkey.encode('utf-8'))
 
     app.openai = OpenAI(cipher)
+    app.genminiai=GeminiAPI()
     
     
     sandbox = False
@@ -109,24 +111,27 @@ def create_app():
 
     from .views.chat import chatview_bp
     from .views.image import imageview_bp
+    from .views.tts import ttsview_bp   
     from .views.user import userview_bp
     from .views.orderCreation import orderCreationview_bp
 
     from .api.userAPI import userAPI_bp 
     from .api.allAPI import allAPI_bp 
     from .OpenAI import openai_bp
+    from .GeminiAPI import genminiai_bp
     
     
 
     app.register_blueprint(chatview_bp)
     app.register_blueprint(imageview_bp)
+    app.register_blueprint(ttsview_bp)
     app.register_blueprint(userview_bp)
     app.register_blueprint(orderCreationview_bp)
 
     app.register_blueprint(userAPI_bp)
     app.register_blueprint(allAPI_bp)
     app.register_blueprint(openai_bp)
-    
+    app.register_blueprint(genminiai_bp)
 
     # app.register_blueprint(auth_bp, url_prefix='/auth') userview_bp
 

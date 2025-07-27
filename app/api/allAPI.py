@@ -13,6 +13,16 @@ import redis
 import json
 import logging
 from ..UserUtils import UserUtils
+from app.utils import TokenNumber 
+
+
+from flask import Flask, render_template, request, send_file
+from google import genai
+from google.genai import types
+import io
+import os
+import wave # Import wave module
+import tiktoken
 
 
 allAPI_bp = Blueprint('allapi', __name__)
@@ -21,6 +31,17 @@ logger = logging.getLogger('log')
 # 用户ID作为限流键的函数
 def user_id_key_func():
     return session.get('user_id', None)
+
+def wave_file(filename, pcm, channels=1, rate=24000, sample_width=2):
+    """
+    Saves raw PCM data to a WAV file.
+    This is primarily for debugging the raw audio data from Gemini.
+    """
+    with wave.open(filename, "wb") as wf:
+        wf.setnchannels(channels)
+        wf.setsampwidth(sample_width)
+        wf.setframerate(rate)
+        wf.writeframes(pcm)
 
 # 用户level作为限流键的函数
 def user_level_key_func():
@@ -109,7 +130,7 @@ def imageGeneration():
             return jsonify({"error": "Payment Required", "message": "your balance:"+str(balance)+",Please fund for your account with https://nightwish.tech/orderPreCreate or  contact with admin kzhou2017@outlook.com"}), 402
         if activate==0:
             return jsonify({"error": "Account Activation Required", "message": "your account is not activated,Please activate your account with email link"}), 402
-        imageUrl="https://lh3.googleusercontent.com/a/ACg8ocLyYBQLGnbfPm-6UdUVF_D4Avc_rzmzInouMfHteVAUvFhWLg=s96-c"
+        # imageUrl="https://lh3.googleusercontent.com/a/ACg8ocLyYBQLGnbfPm-6UdUVF_D4Avc_rzmzInouMfHteVAUvFhWLg=s96-c"
         response=current_app.openai.image_with_gpt(prompt,model,pixl)
         
         # 这里可以添加处理数据的逻辑
@@ -195,4 +216,91 @@ def generate():
     else:
         return jsonify({"error": "Unauthorized", "message": "please login"}), 401
     
+
+@allAPI_bp.route('/generate_audio', methods=['POST'])
+def generate_audio():
+    """
+    Generates audio from user-provided text.
+    Returns the audio as a byte stream for browser playback or download.
+    """
+    text = request.form.get('text', '')
+    voice_name = request.form.get('voice', 'Kore') # Get selected voice, default to 'Kore'
     
+    if not text:
+        return "请输入文本！", 400
+    
+    loginResult=check_login()
+    resLogin=json.loads(loginResult.get_data(as_text=True))["logged_in"]
+    logger.info(resLogin)
+    if resLogin==True:
+        u=UserUtils()
+        userInfo=u.getUserInfo(session['user_id'])
+        activate=userInfo['activate']
+        balance = round(userInfo['balance'],2) 
+        # u=TokenNumber() 
+        # promptTokens=u.num_tokens_from_messages(text,"gpt-4o")   
+       
+        enc = tiktoken.encoding_for_model("gpt-4o")
+        promptTokens=len(enc.encode(text))
+        if balance<=0 :
+            return jsonify({"error": "Payment Required", "message": "your balance:"+str(balance)+",Please fund for your account with https://nightwish.tech/orderPreCreate or  contact with admin kzhou2017@outlook.com"}), 402
+        if activate==0:
+            return jsonify({"error": "Account Activation Required", "message": "your account is not activated,Please activate your account with email link"}), 402
+        if balance<=1 and promptTokens>20 :
+            return jsonify({"error": "Payment Required", "message": "余额小于1,只支持20个字符转换,请减少输入字符尝试"}), 402
+        try:
+
+            response=current_app.genminiai.generateVoice(text,voice_name)
+            
+            # 添加调试信息
+            logger.info(f"API响应类型: {type(response)}")
+            logger.info(f"API响应属性: {dir(response)}")
+            
+            print(response.usage_metadata.prompt_token_count)
+            print(response.usage_metadata.candidates_token_count)
+            print(response.usage_metadata.total_token_count)
+
+            # 尝试安全地访问音频数据
+            try:
+                audio_data_pcm = response.candidates[0].content.parts[0].inline_data.data
+                logger.info(f"音频数据长度: {len(audio_data_pcm)}")
+            except (AttributeError, IndexError, TypeError) as e:
+                logger.error(f"无法访问音频数据: {e}")
+                logger.error(f"响应结构: {response}")
+                return "生成音频失败：API响应格式不正确，请稍后重试", 500
+
+            # --- Debugging code: Save to disk for local verification ---
+            # debug_dir = 'audio_debug'
+            # if not os.path.exists(debug_dir):
+            #     os.makedirs(debug_dir)
+            # debug_file_path = os.path.join(debug_dir, 'temp_output.wav')      
+            
+            # (debug_file_path, audio_data_pcm) # Use the wave_file function to create a playable WAV
+            # print(f"调试：音频文件已保存到 {debug_file_path}")
+            # --- End of debugging code ---
+
+            # Create an in-memory byte stream for the WAV file
+            # We need to wrap the raw PCM data with a WAV header for browser compatibility.
+            wav_buffer = io.BytesIO()
+            with wave.open(wav_buffer, 'wb') as wf:
+                wf.setnchannels(1)        # Assuming mono channel
+                wf.setsampwidth(2)        # Assuming 16-bit samples (2 bytes)
+                wf.setframerate(24000)    # Assuming 24000 Hz sample rate
+                wf.writeframes(audio_data_pcm)
+            
+            # Reset buffer position to the beginning before sending
+            wav_buffer.seek(0) 
+
+            # Send the complete WAV file from the in-memory buffer
+            return send_file(
+                wav_buffer,
+                mimetype='audio/wav',
+                as_attachment=False,  # Not as an attachment, play directly in browser
+                download_name='output.wav' # Provide a default download filename
+            )
+
+        except Exception as e:
+            logger.error(f"生成音频时发生错误: {str(e)}")
+            return f"生成音频时发生错误: {e}", 500
+    else:
+        return jsonify({"error": "Unauthorized", "message": "please login"}), 401

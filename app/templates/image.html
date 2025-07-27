@@ -3,231 +3,379 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chat with GPT</title>
+    <title>AI 图像生成</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/common/loginButton.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/common/displayWindow.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat/chat.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/image/image.css') }}">
     <script src="{{ url_for('static', filename='js/common/loginButton.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/chat/chatUI.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/chat/chatRequest.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image/img.js') }}"></script>
     <style>
-        /* body {
-            font-family: sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            height: 100vh;
-            justify-content: center;
-        }
-        .chat-container {
-            width: 70%;
-            background-color: white;
-            margin: 10px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        } */
         #large-image-container {
-            width: 70%;
-            background-color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
             display: none;
             align-items: center;
             justify-content: center;
-            position: relative;
+            z-index: 2000;
         }
+        
         #large-image {
-            max-width: 100%;
-            max-height: 100%;
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
-        /* #history {
-            background-color: #f5f5f5;
-            color: #333;
-            padding: 15px;
-            overflow-y: auto;
-            height: 500px;
-            border: 1px solid #ccc;
-            margin: 10px 0; 
-        }
-        #prompt {
-            width: 100%;
-            margin: 10px 0; 
-        }
-        button {
-            background-color: #6272a4;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
-            cursor: pointer;
-        } */
-        /* .user-input  {
-            margin-bottom: 10px;
-            padding: 5px;
-            border-radius: 3px;
-            background-color:black; 
-        } */
-        .chatgpt-output {
-            margin-bottom: 10px;
-            padding: 5px;
-            border-radius: 3px;
-            background-color:black; /* Set background color to white for chat output */
-        }
-        .chatgpt-output img {
-            max-width: 100px;
-            cursor: pointer;
-        }
+        
         #close-button {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 20px;
+            right: 20px;
             cursor: pointer;
-            font-size: 24px;
-            padding: 5px;
-            background-color: #ff0000;
+            font-size: 32px;
+            padding: 10px 15px;
+            background: rgba(220, 53, 69, 0.9);
             color: white;
             border: none;
+            border-radius: 50%;
+            transition: all 0.3s ease;
         }
-        /* .chatgpt-processing {
-            background-color: #282a36;
-            color: #f8f8f2;
-        } */
+        
+        #close-button:hover {
+            background: rgba(220, 53, 69, 1);
+            transform: scale(1.1);
+        }
+        
+        .chatgpt-output img {
+            max-width: 200px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chatgpt-output img:hover {
+            transform: scale(1.05);
+        }
+        
+        .image-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .control-group label {
+            font-weight: 500;
+            color: #333;
+            white-space: nowrap;
+        }
+        
+        .control-group select {
+            flex: 1;
+            min-width: 120px;
+        }
     </style>
 </head>
 <body>
-    
-        
+    <!-- 大图查看容器 -->
     <div id="large-image-container">
-        <button id="close-button" >×</button>
-        <img id="large-image" src="" alt="Large View">
-        <!-- <a id="download-button" download>Download</a> -->
+        <button id="close-button">×</button>
+        <img id="large-image" src="" alt="大图查看">
     </div>
     
     <div id="chat-container" class="chat-container">
         <div class="upMenu">
-            <div id="welcome"><p>Welcome, {{ user_name }}!</p></div>
-            <div class="otherUrl"> <a href="/chat">AI chat</a> </div> 
-            <div>
-                <form id="login" action="/loginPage?origin=/image"  method="post">
-                    <button id="loginButton">Login</button>
-                    <!-- <img id="loggedInIcon" src="https://lh3.googleusercontent.com/a/ACg8ocLyYBQLGnbfPm-6UdUVF_D4Avc_rzmzInouMfHteVAUvFhWLg=s96-c" alt="Logged In"/> -->
-                    <img id="loggedInIcon" src="{{ url_for('static', filename='image/login.png') }}" alt="Logged In"/> 
-                    </form>
-                </div>   
+            <div id="welcome"><p>欢迎, {{ user_name }}!</p></div>
+            <div class="otherUrl">
+                <a href="/chat">AI 聊天</a>
+                <a href="/tts">文字转语音</a>
+            </div>
+            <div class="login-section">
+                <form id="login" action="/loginPage?origin=/image" method="post">
+                    <button id="loginButton">登录</button>
+                    <img id="loggedInIcon" src="{{ url_for('static', filename='image/login.png') }}" alt="已登录"/> 
+                </form>
+            </div>   
         </div>
-            
-            <!-- 登录按钮和已登录图标 -->
         
-        
-    <!-- 小窗口和退出按钮 -->
-    <div id="popup">    
-        <div id="balance">Balance:¥{{balance}}</div>  
-        <br> 
-        <div id="fund">
-            <form action="/orderPreCreate" >
-                <button  id="fund" type="submit">Fund</button>
+        <!-- 用户信息弹窗 -->
+        <div id="popup">    
+            <div id="balance">余额: ¥{{balance}}</div>  
+            <div id="fund">
+                <form action="/orderPreCreate">
+                    <button id="fund" type="submit">充值</button>
+                </form>
+            </div>        
+            <form action="/logout">
+                <button id="logoutButton" type="submit">登出</button>
             </form>
-        </div>        
-        <br> 
-        <form action="/logout" >
-            <button  id="logoutButton" type="submit">Logout</button>
-        </form>
-    </div>
+        </div>
        
+        <!-- 图像历史记录 -->
         <div id="history"></div>
-        <label for="model-select">Choose a model:</label>
-        <select id="model-select">
-            <option value="dall-e-2">DALL E2</option>
-			<option value="dall-e-3">DALL E3</option>
-                  
-            <!-- Add other models as needed -->
-        </select>
-		<br>
-		
-		<br>
-        <label for="pixl-select">Choose pixl:</label>
-        <select id="pixl-select">
-            <!-- <option value="256x256">256x256</option>
-			<option value="512x512">512x512</option>
-			<option value="1024x1024">1024x1024</option> -->
-		
-                  
-            <!-- Add other models as needed -->
-        </select>
-		<br>
-        <textarea id="prompt" rows="4" placeholder="Enter your message here..."></textarea>
-        <br>
-        <button id="imageCreate" >Send</button>
+        
+        <!-- 输入区域 -->
+        <div class="input-section">
+            <div class="image-controls">
+                <div class="control-group">
+                    <label for="model-select">选择模型:</label>
+                    <select id="model-select">
+                        <option value="dall-e-2">DALL E2</option>
+                        <option value="dall-e-3">DALL E3</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="pixl-select">选择尺寸:</label>
+                    <select id="pixl-select">
+                        <!-- 动态填充选项 -->
+                    </select>
+                </div>
+            </div>
+            <textarea id="prompt" rows="4" placeholder="请描述您想要生成的图像..."></textarea>
+            <div class="controls">
+                <div style="flex: 1;"></div>
+                <button id="imageCreate">生成图像</button>
+            </div>
+        </div>
     </div>
+    
     <div id="output"></div>
 
     <script>
+        // 全局变量
+        let chatcontainer, historyField, largeImageContainer, largeImage;
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("debug1***")
-    var model = document.getElementById("model-select");
-    var pixl = document.getElementById("pixl-select");
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化全局变量
+            chatcontainer = document.getElementById('chat-container');
+            historyField = document.getElementById('history');
+            largeImageContainer = document.getElementById('large-image-container');
+            largeImage = document.getElementById('large-image');
 
-    // 初始时清空第二个下拉框
-    pixl.options.length = 0;
-    model.addEventListener('change', function() {
-    // model.onchange = function() {
-      var value = model.value;
-      pixl.options.length = 0; // 清空现有的选项
+            // 初始化模型选择
+            var model = document.getElementById("model-select");
+            var pixl = document.getElementById("pixl-select");
 
-      if (value === "dall-e-2") {
-        console.log("debug***")
-        pixl.options.add(new Option("256x256", "256x256"));
-        pixl.options.add(new Option("512x512", "512x512"));
-        pixl.options.add(new Option("1024x1024", "1024x1024"));
-      } else if (value === "dall-e-3") {
-        // 如果选的是'b'，第二个下拉框添加'3'和'4'
-        pixl.options.add(new Option("1024x1024", "1024x1024"));
-      }
-    });
+            // 初始时清空第二个下拉框
+            pixl.options.length = 0;
+            model.addEventListener('change', function() {
+                var value = model.value;
+                pixl.options.length = 0; // 清空现有的选项
 
-    // 初始化第一次触发select1的change事件，填充select2
-    model.dispatchEvent(new Event('change'));
-  });
+                if (value === "dall-e-2") {
+                    pixl.options.add(new Option("256x256", "256x256"));
+                    pixl.options.add(new Option("512x512", "512x512"));
+                    pixl.options.add(new Option("1024x1024", "1024x1024"));
+                } else if (value === "dall-e-3") {
+                    pixl.options.add(new Option("1024x1024", "1024x1024"));
+                }
+            });
 
-         loginButtonDisplayProcess()      
-         let chatcontainer = document.getElementById('chat-container');
-        let historyField = document.getElementById('history');
-        let largeImageContainer = document.getElementById('large-image-container');
-        let largeImage = document.getElementById('large-image');
+            // 初始化第一次触发select1的change事件，填充select2
+            model.dispatchEvent(new Event('change'));
 
-              
-        
-document.addEventListener('DOMContentLoaded', function() {
-    var button = document.getElementById('imageCreate');
-    button.onclick = function() {
-        console.log("button clicked")
-        const prompt = document.getElementById('prompt').value;
-        const model = document.getElementById('model-select').value;
-        const pixl = document.getElementById('pixl-select').value;
-        generateImage(prompt,model,pixl)
-    };
-  });
+            // 绑定生成图像按钮事件
+            var button = document.getElementById('imageCreate');
+            button.onclick = function() {
+                console.log('生成图像按钮被点击');
+                const prompt = document.getElementById('prompt').value;
+                const model = document.getElementById('model-select').value;
+                const pixl = document.getElementById('pixl-select').value;
+                console.log('参数:', { prompt, model, pixl });
+                generateImage(prompt, model, pixl);
+            };
 
-
-  function sendImageRequestByEnter(elmentId,keyevent)
-        {
-             // 添加回车键发送消息的功能
+            // 绑定回车键事件
+            sendImageRequestByEnter('prompt', 'keypress');
             
-                document.getElementById(elmentId).addEventListener(keyevent, function(event) {
+            // 初始化登录状态
+            loginButtonDisplayProcess();
+            
+            // 滚动到底部
+            historyField.scrollTop = historyField.scrollHeight;
+        });
+
+        function sendImageRequestByEnter(elementId, keyevent) {
+            document.getElementById(elementId).addEventListener(keyevent, function(event) {
                 if (event.keyCode === 13) {                   
-                    event.preventDefault(); // 阻止回车默认的换行行为
+                    event.preventDefault();
                     const prompt = document.getElementById('prompt').value;
                     const model = document.getElementById('model-select').value;
                     const pixl = document.getElementById('pixl-select').value;
-                    generateImage(prompt,model,pixl)
+                    generateImage(prompt, model, pixl);
                 }
             });
         }
 
-        sendImageRequestByEnter('prompt','keypress')
-							
-		 historyField.scrollTop = historyField.scrollHeight;
+        // 检查登录状态的函数
+        async function checkLoginStatus() {
+            try {
+                const response = await fetch('/check-login');
+                const data = await response.json();           
+                return data;
+            } catch (error) {
+                console.error("Error checking login status:", error);
+                return { logged_in: false };
+            }
+        }
+
+        // 清理输入提示文本
+        function cleanInputPromptText() {
+            const promptElement = document.getElementById('prompt');
+            if (promptElement) {
+                promptElement.value = '';
+            }
+        }
+
+        // 显示处理中的动画
+        function chatgptisprocessing(processingOutput, historyField) {
+            let dots = 0;
+            const interval = setInterval(() => {
+                dots = (dots + 1) % 4;
+                processingOutput.textContent = 'ChatGPT: 正在生成图像' + '.'.repeat(dots);
+            }, 500);
+            return interval;
+        }
+
+        // 添加聊天历史
+        function addChatHistory(message, chatgptOutput, historyField) {
+            chatgptOutput.textContent = 'ChatGPT: ' + message;
+        }
+
+        // 逐字符显示响应
+        function responseDisplayByChar(message, chatgptOutput, historyField) {
+            let index = 0;
+            const interval = setInterval(() => {
+                if (index < message.length) {
+                    chatgptOutput.textContent = 'ChatGPT: ' + message.substring(0, index + 1);
+                    index++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 50);
+        }
+
+        // 关闭大图显示
+        function closeLargeImage(largeImageContainer, chatcontainer) {
+            largeImageContainer.style.display = 'none';
+            chatcontainer.style.width = '100%';
+        }
+
+        // 生成图像的主要函数
+        async function generateImage(prompt, model, pixl) {
+            console.log("开始生成图像");
+            console.log("model", model);
+            console.log("pixl", pixl);
+            console.log("prompt", prompt);
+                  
+            // 检查输入
+            if (!prompt.trim()) {
+                alert('请输入图像描述');
+                return;
+            }
+
+            // 用户输入
+            const userInput = document.createElement('div');
+            const responseElement = document.getElementById('output');        
+            userInput.className = 'user-input';
+            userInput.textContent = 'You: ' + prompt;
+            historyField.appendChild(userInput);
+            historyField.scrollTop = historyField.scrollHeight;
+
+            // 检查登录状态
+            console.log('检查登录状态...');
+            const dataCheckLogin = await checkLoginStatus();     
+            let loginStatus = dataCheckLogin.logged_in;
+            console.log('登录状态:', loginStatus);
+            
+            if (loginStatus == false) {
+                console.log('Is logged in:', loginStatus);    
+                const chatgptOutput = document.createElement('div');
+                chatgptOutput.className = 'chatgpt-output';        
+                chatgptOutput.innerHTML = 'Chatgpt: Please login first';
+                historyField.appendChild(chatgptOutput);
+                return;
+            }
+
+            // 添加处理中的提示
+            const processingOutput = document.createElement('div');   
+            cleanInputPromptText();
+            let processingInterval = chatgptisprocessing(processingOutput, historyField);        
+            
+            let error = "";
+            let response = "";
+            
+            try {
+                console.log('发送请求到 /api/v1/image');
+                console.log('请求数据:', { prompt, model, pixl });
+                response = await fetch('/api/v1/image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, model, pixl })
+                });						
+                console.log('响应状态:', response.status);
+                console.log('响应头:', response.headers);
+            } catch (error) {
+                processingOutput.remove();
+                console.error('网络错误:', error);
+                responseElement.textContent = 'Error calling the API: ' + error.message;
+                return;
+            }
+
+            const result = await response.json();
+            console.log('API响应:', result);
+            
+            clearInterval(processingInterval);
+            processingOutput.remove();
+            
+            const chatgptOutput = document.createElement('div');
+            chatgptOutput.className = 'chatgpt-output';		
+            
+            // 错误处理
+            if (response.status != 200) {
+                let message = response.status + "-" + result.error + ":" + result.message;
+                console.error('API错误:', message);
+                addChatHistory(message, chatgptOutput, historyField);
+                responseDisplayByChar(message, chatgptOutput, historyField);
+                historyField.appendChild(chatgptOutput);
+                return;
+            }
+            
+            console.log('图像生成成功');
+            console.log(result);
+            var imageUrl = result.url;
+            console.log("图像URL:", imageUrl);
+            
+            // 创建图像元素
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = 'Generated Image';
+            console.log('图像元素已创建');
+
+            img.onclick = function () {
+                console.log('图像被点击，显示大图');
+                largeImage.src = imageUrl;       
+                largeImageContainer.style.display = 'flex';
+                document.querySelector('.chat-container').style.width = '30%';
+            };
+
+            chatgptOutput.appendChild(img);								
+            historyField.appendChild(chatgptOutput);
+            historyField.scrollTop = historyField.scrollHeight;
+            console.log('图像已添加到历史记录');
+        }
     </script>
 </body>
 </html>
