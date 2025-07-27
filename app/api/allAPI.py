@@ -211,8 +211,14 @@ def generate():
         # sessionDict["conversation_history"]=conversation_history
 
 
-        results= make_response(current_app.openai.chat_with_gpt_stream2(prompt,model,sessionDict))
-        return results   
+        # 在生成器外部获取openai实例
+        openai_instance = current_app.openai
+        
+        def generate():
+            for chunk in openai_instance.chat_with_gpt_stream2(prompt,model,sessionDict):
+                yield chunk
+        
+        return Response(generate(), mimetype='text/plain')   
     else:
         return jsonify({"error": "Unauthorized", "message": "please login"}), 401
     

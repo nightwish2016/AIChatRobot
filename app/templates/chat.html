@@ -91,7 +91,10 @@
   
         let historyField = document.getElementById('history');
         sendRequestByEnter('prompt','keydown')
-                                    
+        
+        // 添加调试信息
+        console.log('聊天页面已加载，流式输出功能已启用');
+        console.log('当前会话ID:', document.getElementById("guidDisplay").textContent);
     </script>
 </body>
 </html>
