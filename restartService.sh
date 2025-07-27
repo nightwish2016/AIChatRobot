@@ -6,7 +6,7 @@ eval "$(pyenv virtualenv-init -)"
 
 pyenv shell myenv3.12  # 或用 source activate
 
-cd /root/myai || exit
+cd /root/myai/0727/AICHATROBOT || exit
 git pull
 pkill -f gunicorn
 sleep 2
