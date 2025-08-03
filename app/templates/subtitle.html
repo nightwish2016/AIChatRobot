@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频字幕提取工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/loginButton.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/displayWindow.css') }}">
+    <script src="{{ url_for('static', filename='js/common/loginButton.js') }}"></script>
+    <style>
+        /* 字幕提取页面特定样式 */
+        .subtitle-content {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow-y: auto;
+        }
+
+        .subtitle-form {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle-form h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.8rem;
+            font-weight: 600;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 60px;
+            text-align: center;
+            margin-bottom: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+
+        .upload-area .upload-icon {
+            font-size: 5em;
+            color: #667eea;
+            margin-bottom: 25px;
+        }
+
+        .upload-area .upload-text {
+            font-size: 1.4em;
+            margin-bottom: 20px;
+        }
+
+        .upload-area .upload-hint {
+            color: #999;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .options {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .option-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .option-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #555;
+            font-size: 1.1rem;
+        }
+
+        .option-group select {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .option-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .result {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .result-info {
+            margin: 10px 0;
+            text-align: left;
+        }
+
+        .result-info strong {
+            color: #667eea;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .subtitle-content {
+                padding: 20px;
+            }
+
+            .subtitle-form {
+                padding: 25px;
+                max-width: 95%;
+            }
+
+            .subtitle-form h1 {
+                font-size: 2.2rem;
+                margin-bottom: 25px;
+            }
+
+            .upload-area {
+                padding: 40px;
+            }
+
+            .upload-area .upload-icon {
+                font-size: 4em;
+            }
+
+            .btn {
+                padding: 12px 25px;
+                font-size: 1.1em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .subtitle-content {
+                padding: 15px;
+            }
+
+            .subtitle-form {
+                padding: 20px;
+                max-width: 98%;
+            }
+
+            .subtitle-form h1 {
+                font-size: 1.8rem;
+            }
+
+            .upload-area {
+                padding: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="upMenu">
+            <div id="welcome"><p>欢迎, {{ user_name }}!</p></div>
+            <div class="otherUrl">
+                <a href="/chat">AI 聊天</a>
+                <a href="/image">AI 图像生成</a>
+                <a href="/tts">文字转语音</a>
+            </div>
+            <div class="login-section">
+                <form id="login" action="/loginPage?origin=/subtitle" method="post">
+                    <button id="loginButton">登录</button>
+                    <img id="loggedInIcon" src="{{ url_for('static', filename='image/login.png') }}" alt="已登录"/> 
+                </form>
+            </div>
+        </div>
+        
+        <!-- 用户信息弹窗 -->
+        <div id="popup">    
+            <div id="balance">余额: ¥{{balance}}</div>  
+            <div id="fund">
+                <form action="/orderPreCreate">
+                    <button id="fund" type="submit">充值</button>
+                </form>
+            </div>        
+            <form action="/logout">
+                <button id="logoutButton" type="submit">登出</button>
+            </form>
+        </div>
+
+        <!-- 字幕提取内容区域 -->
+        <div class="subtitle-content">
+            <div class="subtitle-form">
+                <h1>🎬 视频字幕提取工具</h1>
+                <p style="color: #666; margin-bottom: 30px;">支持提取内嵌字幕、外挂字幕，或使用AI语音识别生成字幕</p>
+                
+                <!-- 登录提示区域 -->
+                <div id="loginPrompt" style="display: none; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 12px; margin-bottom: 30px;">
+                    <div style="font-size: 3em; margin-bottom: 20px;">🔒</div>
+                    <h3 style="color: #333; margin-bottom: 15px;">需要登录</h3>
+                    <p style="color: #666; margin-bottom: 25px;">请先登录后再使用字幕提取功能</p>
+                    <button class="btn" onclick="document.getElementById('loginButton').click()">立即登录</button>
+                </div>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">点击或拖拽文件到此处上传</div>
+                    <div class="upload-hint">支持格式: MP4, AVI, MOV, MKV, WMV, FLV, WEBM, MP3, WAV, M4A, AAC, OGG, FLAC</div>
+                    <button class="btn" id="selectFileBtn">选择文件</button>
+                    <input type="file" id="fileInput" class="file-input" accept=".mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.mp3,.wav,.m4a,.aac,.ogg,.flac">
+                </div>
+
+                <div class="status" id="status"></div>
+
+                <div class="options" id="options">
+                    <div class="option-group">
+                        <label for="outputFormat">输出格式:</label>
+                        <select id="outputFormat">
+                            <option value="srt">SRT 格式</option>
+                            <option value="vtt">VTT 格式</option>
+                        </select>
+                    </div>
+                    <div class="option-group">
+                        <label for="language">识别语言:</label>
+                        <select id="language">
+                            <option value="zh">中文</option>
+                            <option value="en">英文</option>
+                            <option value="ja">日文</option>
+                            <option value="ko">韩文</option>
+                            <option value="auto">自动检测</option>
+                        </select>
+                    </div>
+                    <button class="btn" id="processBtn" onclick="processSubtitle()">开始处理</button>
+                </div>
+
+                <div class="result" id="result">
+                    <h3>🎉 处理完成!</h3>
+                    <div id="resultInfo"></div>
+                    <button class="btn download-btn" id="downloadBtn" onclick="downloadSubtitle()">下载字幕文件</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let uploadedFilePath = null;
+        let downloadUrl = null;
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 使用标准的登录按钮处理流程
+            loginButtonDisplayProcess();
+            
+            // 检查登录状态并显示相应内容
+            checkLoginAndUpdateUI();
+            
+            // 设置登录状态监听
+            setupLoginStateListener();
+            
+            // 绑定文件选择事件
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            
+            // 绑定上传区域点击事件（排除按钮区域）
+            document.getElementById('uploadArea').addEventListener('click', function(e) {
+                // 如果点击的是按钮，不触发文件选择
+                if (e.target.id === 'selectFileBtn') {
+                    return;
+                }
+                document.getElementById('fileInput').click();
+            });
+            
+            // 绑定选择文件按钮点击事件
+            document.getElementById('selectFileBtn').addEventListener('click', function(e) {
+                e.stopPropagation(); // 阻止事件冒泡
+                document.getElementById('fileInput').click();
+            });
+        });
+
+        // 检查登录状态并更新UI
+        async function checkLoginAndUpdateUI() {
+            const dataCheckLogin = await checkLoginStatus();     
+            let loginStatus = dataCheckLogin.logged_in;
+            
+            const loginPrompt = document.getElementById('loginPrompt');
+            const uploadArea = document.getElementById('uploadArea');
+            
+            if (loginStatus == false) {
+                // 未登录：显示登录提示，隐藏上传区域
+                loginPrompt.style.display = 'block';
+                uploadArea.style.display = 'none';
+            } else {
+                // 已登录：隐藏登录提示，显示上传区域
+                loginPrompt.style.display = 'none';
+                uploadArea.style.display = 'block';
+            }
+        }
+
+        // 页面加载时初始化登录状态
+        window.addEventListener('load', function() {
+            displayLoginStatus(); // 确保登录状态和余额显示正确
+            checkLoginAndUpdateUI(); // 更新字幕提取页面UI
+        });
+
+        // 监听登录状态变化
+        function setupLoginStateListener() {
+            // 监听登录按钮点击
+            document.getElementById('loginButton').addEventListener('click', function() {
+                setTimeout(function() {
+                    displayLoginStatus(); // 使用标准的登录状态显示函数
+                    checkLoginAndUpdateUI(); // 更新字幕提取页面UI
+                }, 1000); // 延迟检查，等待登录完成
+            });
+            
+            // 监听登出按钮点击
+            document.getElementById('logoutButton').addEventListener('click', function() {
+                setTimeout(function() {
+                    displayLoginStatus(); // 使用标准的登录状态显示函数
+                    checkLoginAndUpdateUI(); // 更新字幕提取页面UI
+                }, 500); // 延迟检查，等待登出完成
+            });
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        async function handleFile(file) {
+            // 检查登录状态
+            const dataCheckLogin = await checkLoginStatus();     
+            let loginStatus = dataCheckLogin.logged_in;
+            
+            if (loginStatus == false) {
+                showStatus('请先登录后再使用字幕提取功能', 'error');
+                return;
+            }
+
+            showStatus('正在上传文件...', 'info');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/api/subtitle/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.message || '上传失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    uploadedFilePath = data.file_path;
+                    showStatus(`文件上传成功: ${data.original_filename}`, 'success');
+                    document.getElementById('options').style.display = 'block';
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showStatus('上传失败: ' + error.message, 'error');
+            });
+        }
+
+        async function processSubtitle() {
+            // 检查登录状态
+            const dataCheckLogin = await checkLoginStatus();     
+            let loginStatus = dataCheckLogin.logged_in;
+            
+            if (loginStatus == false) {
+                showStatus('请先登录后再使用字幕提取功能', 'error');
+                return;
+            }
+
+            if (!uploadedFilePath) {
+                showStatus('请先上传文件', 'error');
+                return;
+            }
+
+            const outputFormat = document.getElementById('outputFormat').value;
+            const language = document.getElementById('language').value;
+
+            showStatus('正在处理字幕，请稍候...', 'info');
+            document.getElementById('processBtn').disabled = true;
+
+            fetch('/api/subtitle/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    file_path: uploadedFilePath,
+                    output_format: outputFormat,
+                    language: language
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.message || '处理失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('processBtn').disabled = false;
+                
+                if (data.success) {
+                    downloadUrl = data.download_url;
+                    showResult(data);
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                document.getElementById('processBtn').disabled = false;
+                showStatus('处理失败: ' + error.message, 'error');
+            });
+        }
+
+        function showResult(data) {
+            const resultDiv = document.getElementById('result');
+            const resultInfo = document.getElementById('resultInfo');
+            
+            let infoHtml = `
+                <div class="result-info"><strong>处理类型:</strong> ${getProcessingTypeText(data.processing_type)}</div>
+                <div class="result-info"><strong>输出格式:</strong> ${data.subtitle_format.toUpperCase()}</div>
+                <div class="result-info"><strong>文件名:</strong> ${data.filename}</div>
+                <div class="result-info"><strong>状态:</strong> ${data.message}</div>
+            `;
+            
+            resultInfo.innerHTML = infoHtml;
+            resultDiv.style.display = 'block';
+        }
+
+        function getProcessingTypeText(type) {
+            const types = {
+                'embedded_subtitle': '内嵌字幕提取',
+                'external_subtitle': '外挂字幕识别',
+                'speech_recognition': 'AI语音识别'
+            };
+            return types[type] || type;
+        }
+
+        function downloadSubtitle() {
+            if (downloadUrl) {
+                window.open(downloadUrl, '_blank');
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            
+            // 如果是余额不足的错误，将充值链接转换为可点击的链接
+            if (type === 'error' && message.includes('充值链接')) {
+                const clickableMessage = message.replace('充值链接', `<a href="/orderPreCreate" style="color: #007bff; text-decoration: underline;">充值链接</a>`);
+                statusDiv.innerHTML = clickableMessage;
+            } else {
+                statusDiv.textContent = message;
+            }
+            
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html> 

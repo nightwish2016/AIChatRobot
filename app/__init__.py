@@ -114,6 +114,7 @@ def create_app():
     from .views.tts import ttsview_bp   
     from .views.user import userview_bp
     from .views.orderCreation import orderCreationview_bp
+    from .views.subtitle import subtitleview_bp
 
     from .api.userAPI import userAPI_bp 
     from .api.allAPI import allAPI_bp 
@@ -127,6 +128,7 @@ def create_app():
     app.register_blueprint(ttsview_bp)
     app.register_blueprint(userview_bp)
     app.register_blueprint(orderCreationview_bp)
+    app.register_blueprint(subtitleview_bp)
 
     app.register_blueprint(userAPI_bp)
     app.register_blueprint(allAPI_bp)
