@@ -243,7 +243,7 @@ class SubtitleExtractor:
             logger.error(f"提取音频时出错: {str(e)}")
             return False
     
-    def process_video_subtitles(self, video_path: str, output_format: str = 'srt') -> dict:
+    def process_video_subtitles(self, video_path: str, output_format: str = 'srt', language: str = 'zh') -> dict:
         result = {
             'success': False,
             'message': '',
@@ -352,7 +352,7 @@ class SubtitleExtractor:
                         with tempfile.NamedTemporaryFile(suffix=f'.{output_format}', delete=False) as temp_subtitle_file:
                             final_output = temp_subtitle_file.name
                         
-                        if self.generate_subtitles_with_whisper(temp_audio, final_output):
+                        if self.generate_subtitles_with_whisper(temp_audio, final_output, language):
                             # 上传到R2
                             success, object_key = self.r2_storage.upload_file(
                                 final_output,
@@ -391,7 +391,7 @@ class SubtitleExtractor:
                         base_name = os.path.splitext(os.path.basename(video_path))[0]
                         final_output = os.path.join(self.output_folder, f"{base_name}.{output_format}")
                         
-                        if self.generate_subtitles_with_whisper(temp_audio, final_output):
+                        if self.generate_subtitles_with_whisper(temp_audio, final_output, language):
                             result['processing_type'] = 'speech_recognition'
                             result['success'] = True
                             result['message'] = '成功通过语音识别生成字幕'

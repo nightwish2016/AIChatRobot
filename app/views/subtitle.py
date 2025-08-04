@@ -218,7 +218,7 @@ def process_subtitle():
                 }), 402
         
         # 处理字幕
-        result = extractor.process_video_subtitles(file_path, output_format)
+        result = extractor.process_video_subtitles(file_path, output_format, language)
         
         # 清理临时文件
         if temp_file_created and os.path.exists(file_path):
