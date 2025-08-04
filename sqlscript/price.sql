@@ -9,9 +9,10 @@ CREATE TABLE chatPrice (
 
 CREATE TABLE imagePrice (
     id INTEGER PRIMARY KEY AUTOINCREMENT,           -- 定义 id 为整数类型的主键，自动增长
-    model varchar(32) NOT NULL,                        -- 定义 mode 为文本类型
-    inputPrice REAL,              -- 定义 quality 为长度最大为32的字符类型
-    outputPrice REAL           -- 定义 resolution 为长度最大为32的字符类型                       -- 定义 price 为实数类型，允许存储小数
+    model varchar(32) NOT NULL, 
+    quality     varchar(32) NOT NULL,   
+resolution varchar(32) NOT NULL,  
+    price REAL              -- 定义 quality 为长度最大为32的字符类型        -- 定义 resolution 为长度最大为32的字符类型                       -- 定义 price 为实数类型，允许存储小数
 );
 
 
@@ -21,6 +22,14 @@ CREATE TABLE ttsPrice (
     inputPrice REAL,              -- 定义 inputPrice 为实数类型，允许存储小数
     outputPrice REAL                -- 定义 price 为实数类型，允许存储小数
 );
+
+
+CREATE TABLE transcriptionPrice (
+  id INTEGER PRIMARY KEY  AUTOINCREMENT,       -- 定义 id 为整数类型的主键，自动增长
+    model varchar(32) NOT NULL,          -- 定义 model 为文本类型，不允许为空
+    price REAL
+);
+
 
 
 
@@ -51,7 +60,13 @@ insert into imagePrice(model,quality,resolution,price)  values('dall-e-2','Stand
 
 insert into ttsPrice(model,inputPrice,outputPrice) values('gemini-2.5-flash-preview-tts',0.5,1.110);
 
+
+insert into transcriptionPrice(model,price) values('whisper-1',0.006);
+
 select * from  chatPrice;
 select * from imagePrice;
 
 select * from ttsPrice;
+
+
+select * from transcriptionPrice;

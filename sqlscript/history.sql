@@ -54,3 +54,15 @@ CREATE TABLE ttsHistory(
 
 
 
+CREATE TABLE transcriptionHistory(
+ Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    UserId INTEGER,      
+    Model VARCHAR(50),
+    duration double,
+    Created TIMESTAMP,
+    chargeStatus
+);
+
+
+
+
