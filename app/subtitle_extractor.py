@@ -12,6 +12,7 @@ import openai
 from app.chatHistoryUtils import chatHistoryUtils
 from flask import Flask, request,session,jsonify
 import time
+from app.r2_storage import R2Storage
 
 # 尝试导入ffmpeg，如果失败则使用subprocess
 try:
@@ -24,13 +25,25 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 class SubtitleExtractor:
-    def __init__(self, upload_folder: str = "uploads", output_folder: str = "subtitles", openai_api_key: str = None):
+    def __init__(self, upload_folder: str = "uploads", output_folder: str = "subtitles", openai_api_key: str = None, use_r2: bool = True):
         self.upload_folder = upload_folder
         self.output_folder = output_folder
         self.openai_api_key = openai_api_key
+        self.use_r2 = use_r2
         
-        os.makedirs(upload_folder, exist_ok=True)
-        os.makedirs(output_folder, exist_ok=True)
+        # 初始化R2存储（如果启用）
+        if self.use_r2:
+            try:
+                self.r2_storage = R2Storage()
+                logger.info("R2存储初始化成功")
+            except Exception as e:
+                logger.warning(f"R2存储初始化失败，将使用本地存储: {str(e)}")
+                self.use_r2 = False
+        
+        # 只有在不使用R2时才创建本地文件夹
+        if not self.use_r2:
+            os.makedirs(upload_folder, exist_ok=True)
+            os.makedirs(output_folder, exist_ok=True)
         
         self.supported_video_formats = ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm']
         self.supported_audio_formats = ['.mp3', '.wav', '.m4a', '.aac', '.ogg', '.flac']
@@ -236,7 +249,9 @@ class SubtitleExtractor:
             'message': '',
             'subtitle_file': None,
             'subtitle_format': output_format,
-            'processing_type': None
+            'processing_type': None,
+            'r2_object_key': None,
+            'download_url': None
         }
         
         try:
@@ -245,45 +260,149 @@ class SubtitleExtractor:
             if subtitle_info['has_embedded_subtitles']:
                 logger.info("检测到内嵌字幕，开始提取...")
                 base_name = os.path.splitext(os.path.basename(video_path))[0]
-                temp_srt = os.path.join(self.output_folder, f"{base_name}.srt")
                 
-                if self.extract_embedded_subtitles(video_path, temp_srt):
-                    result['processing_type'] = 'embedded_subtitle'
-                    result['success'] = True
-                    result['message'] = '成功提取内嵌字幕'
-                    result['subtitle_file'] = temp_srt
+                if self.use_r2:
+                    # 使用临时文件进行提取
+                    with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as temp_file:
+                        temp_srt = temp_file.name
+                    
+                    if self.extract_embedded_subtitles(video_path, temp_srt):
+                        # 上传到R2
+                        success, object_key = self.r2_storage.upload_file(
+                            temp_srt, 
+                            object_key=f"subtitles/{base_name}.srt",
+                            content_type='text/plain'
+                        )
+                        
+                        if success:
+                            result['processing_type'] = 'embedded_subtitle'
+                            result['success'] = True
+                            result['message'] = '成功提取内嵌字幕'
+                            result['subtitle_file'] = temp_srt  # 临时文件路径
+                            result['r2_object_key'] = object_key
+                            
+                            # 生成下载URL
+                            url_success, download_url = self.r2_storage.get_file_url(object_key)
+                            if url_success:
+                                result['download_url'] = download_url
+                        else:
+                            result['message'] = f'上传字幕到R2失败: {object_key}'
+                    else:
+                        result['message'] = '提取内嵌字幕失败'
+                    
+                    # 清理临时文件
+                    if os.path.exists(temp_srt):
+                        os.remove(temp_srt)
                 else:
-                    result['message'] = '提取内嵌字幕失败'
+                    # 本地存储
+                    temp_srt = os.path.join(self.output_folder, f"{base_name}.srt")
+                    
+                    if self.extract_embedded_subtitles(video_path, temp_srt):
+                        result['processing_type'] = 'embedded_subtitle'
+                        result['success'] = True
+                        result['message'] = '成功提取内嵌字幕'
+                        result['subtitle_file'] = temp_srt
+                    else:
+                        result['message'] = '提取内嵌字幕失败'
                     
             elif subtitle_info['has_external_subtitles']:
                 logger.info("检测到外挂字幕文件")
                 external_subtitle = subtitle_info['external_subtitle_files'][0]
-                result['processing_type'] = 'external_subtitle'
-                result['success'] = True
-                result['message'] = '使用外挂字幕文件'
-                result['subtitle_file'] = external_subtitle
+                
+                if self.use_r2:
+                    # 上传外挂字幕到R2
+                    base_name = os.path.splitext(os.path.basename(video_path))[0]
+                    success, object_key = self.r2_storage.upload_file(
+                        external_subtitle,
+                        object_key=f"subtitles/{base_name}.srt",
+                        content_type='text/plain'
+                    )
+                    
+                    if success:
+                        result['processing_type'] = 'external_subtitle'
+                        result['success'] = True
+                        result['message'] = '使用外挂字幕文件'
+                        result['subtitle_file'] = external_subtitle
+                        result['r2_object_key'] = object_key
+                        
+                        # 生成下载URL
+                        url_success, download_url = self.r2_storage.get_file_url(object_key)
+                        if url_success:
+                            result['download_url'] = download_url
+                    else:
+                        result['message'] = f'上传字幕到R2失败: {object_key}'
+                else:
+                    result['processing_type'] = 'external_subtitle'
+                    result['success'] = True
+                    result['message'] = '使用外挂字幕文件'
+                    result['subtitle_file'] = external_subtitle
                     
             else:
                 logger.info("未检测到字幕，开始语音识别...")
-                temp_audio = os.path.join(self.output_folder, f"temp_{os.path.basename(video_path)}.wav")
                 
-                if self.extract_audio_from_video(video_path, temp_audio):
-                    # 使用原始文件名作为基础，避免路径问题
-                    base_name = os.path.splitext(os.path.basename(video_path))[0]
-                    final_output = os.path.join(self.output_folder, f"{base_name}.{output_format}")
+                if self.use_r2:
+                    # 使用临时文件
+                    with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_audio_file:
+                        temp_audio = temp_audio_file.name
                     
-                    if self.generate_subtitles_with_whisper(temp_audio, final_output):
-                        result['processing_type'] = 'speech_recognition'
-                        result['success'] = True
-                        result['message'] = '成功通过语音识别生成字幕'
-                        result['subtitle_file'] = final_output
+                    if self.extract_audio_from_video(video_path, temp_audio):
+                        base_name = os.path.splitext(os.path.basename(video_path))[0]
+                        
+                        # 使用临时文件生成字幕
+                        with tempfile.NamedTemporaryFile(suffix=f'.{output_format}', delete=False) as temp_subtitle_file:
+                            final_output = temp_subtitle_file.name
+                        
+                        if self.generate_subtitles_with_whisper(temp_audio, final_output):
+                            # 上传到R2
+                            success, object_key = self.r2_storage.upload_file(
+                                final_output,
+                                object_key=f"subtitles/{base_name}.{output_format}",
+                                content_type='text/plain'
+                            )
+                            
+                            if success:
+                                result['processing_type'] = 'speech_recognition'
+                                result['success'] = True
+                                result['message'] = '成功通过语音识别生成字幕'
+                                result['subtitle_file'] = final_output
+                                result['r2_object_key'] = object_key
+                                
+                                # 生成下载URL
+                                url_success, download_url = self.r2_storage.get_file_url(object_key)
+                                if url_success:
+                                    result['download_url'] = download_url
+                            else:
+                                result['message'] = f'上传字幕到R2失败: {object_key}'
+                        else:
+                            result['message'] = '语音识别生成字幕失败'
+                        
+                        # 清理临时文件
+                        if os.path.exists(temp_audio):
+                            os.remove(temp_audio)
+                        if os.path.exists(final_output):
+                            os.remove(final_output)
                     else:
-                        result['message'] = '语音识别生成字幕失败'
-                    
-                    if os.path.exists(temp_audio):
-                        os.remove(temp_audio)
+                        result['message'] = '提取音频失败'
                 else:
-                    result['message'] = '提取音频失败'
+                    # 本地存储
+                    temp_audio = os.path.join(self.output_folder, f"temp_{os.path.basename(video_path)}.wav")
+                    
+                    if self.extract_audio_from_video(video_path, temp_audio):
+                        base_name = os.path.splitext(os.path.basename(video_path))[0]
+                        final_output = os.path.join(self.output_folder, f"{base_name}.{output_format}")
+                        
+                        if self.generate_subtitles_with_whisper(temp_audio, final_output):
+                            result['processing_type'] = 'speech_recognition'
+                            result['success'] = True
+                            result['message'] = '成功通过语音识别生成字幕'
+                            result['subtitle_file'] = final_output
+                        else:
+                            result['message'] = '语音识别生成字幕失败'
+                        
+                        if os.path.exists(temp_audio):
+                            os.remove(temp_audio)
+                    else:
+                        result['message'] = '提取音频失败'
             
             return result
             

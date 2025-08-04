@@ -330,6 +330,8 @@
     <script>
         let uploadedFilePath = null;
         let downloadUrl = null;
+        let useR2Storage = true;
+        let downloadFilename = null;
 
         // 初始化页面
         document.addEventListener('DOMContentLoaded', function() {
@@ -351,12 +353,16 @@
                 if (e.target.id === 'selectFileBtn') {
                     return;
                 }
+                // 重置状态后再选择文件
+                resetStateForNewFile();
                 document.getElementById('fileInput').click();
             });
             
             // 绑定选择文件按钮点击事件
             document.getElementById('selectFileBtn').addEventListener('click', function(e) {
                 e.stopPropagation(); // 阻止事件冒泡
+                // 重置状态后再选择文件
+                resetStateForNewFile();
                 document.getElementById('fileInput').click();
             });
         });
@@ -408,6 +414,8 @@
         function handleFileSelect(e) {
             const file = e.target.files[0];
             if (file) {
+                // 清空文件输入，这样用户可以看到状态已重置
+                e.target.value = '';
                 handleFile(file);
             }
         }
@@ -421,6 +429,13 @@
                 showStatus('请先登录后再使用字幕提取功能', 'error');
                 return;
             }
+
+            // 重置之前的状态
+            uploadedFilePath = null;
+            downloadUrl = null;
+            downloadFilename = null;
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('options').style.display = 'none';
 
             showStatus('正在上传文件...', 'info');
 
@@ -442,6 +457,7 @@
             .then(data => {
                 if (data.success) {
                     uploadedFilePath = data.file_path;
+                    useR2Storage = data.use_r2 || false;
                     showStatus(`文件上传成功: ${data.original_filename}`, 'success');
                     document.getElementById('options').style.display = 'block';
                 } else {
@@ -482,7 +498,8 @@
                 body: JSON.stringify({
                     file_path: uploadedFilePath,
                     output_format: outputFormat,
-                    language: language
+                    language: language,
+                    use_r2: useR2Storage
                 })
             })
             .then(response => {
@@ -498,7 +515,9 @@
                 
                 if (data.success) {
                     downloadUrl = data.download_url;
+                    downloadFilename = data.filename;
                     showResult(data);
+                    showStatus('字幕处理完成！', 'success');
                 } else {
                     showStatus(data.message, 'error');
                 }
@@ -535,7 +554,44 @@
 
         function downloadSubtitle() {
             if (downloadUrl) {
-                window.open(downloadUrl, '_blank');
+                const filename = downloadFilename || 'subtitle.srt';
+                
+                // 如果是R2存储的URL，使用fetch下载
+                if (downloadUrl.startsWith('http')) {
+                    // R2预签名URL，直接触发下载
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = filename;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    // 本地文件下载，使用fetch
+                    fetch(downloadUrl)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('下载失败');
+                            }
+                            return response.blob();
+                        })
+                        .then(blob => {
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = filename;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+                        })
+                        .catch(error => {
+                            console.error('下载失败:', error);
+                            showStatus('下载失败: ' + error.message, 'error');
+                        });
+                }
+            } else {
+                showStatus('没有可下载的字幕文件', 'error');
             }
         }
 
@@ -558,6 +614,25 @@
             statusDiv.className = `status ${type}`;
             statusDiv.style.display = 'block';
         }
+
+        function resetStateForNewFile() {
+            // 重置所有状态变量
+            uploadedFilePath = null;
+            downloadUrl = null;
+            downloadFilename = null;
+            
+            // 隐藏结果区域和选项区域
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('options').style.display = 'none';
+            
+            // 清空文件输入
+            document.getElementById('fileInput').value = '';
+            
+            // 显示状态信息
+            showStatus('请选择新的视频文件', 'info');
+        }
+
+
     </script>
 </body>
 </html> 

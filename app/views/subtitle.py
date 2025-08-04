@@ -8,6 +8,7 @@ from ..UserUtils import UserUtils
 from app.api.userAPI import check_login
 import logging
 from app.chatHistoryUtils import chatHistoryUtils
+from app.r2_storage import R2Storage
 
 logger = logging.getLogger(__name__)
 
@@ -70,24 +71,67 @@ def upload_video():
         if not allowed_file(file.filename):
             return jsonify({'success': False, 'message': '不支持的文件格式'}), 400
         
-        # 生成唯一文件名
-        file_ext = file.filename.rsplit('.', 1)[1].lower()
-        unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+        # 尝试使用R2存储
+        use_r2 = True
+        try:
+            r2_storage = R2Storage()
+        except Exception as e:
+            logger.warning(f"R2存储初始化失败，使用本地存储: {str(e)}")
+            use_r2 = False
         
-        # 保存文件
-        upload_folder = "uploads"
-        os.makedirs(upload_folder, exist_ok=True)
-        file_path = os.path.join(upload_folder, unique_filename)
-        file.save(file_path)
-        
-        logger.info(f"文件上传成功: {file_path}")
-        
-        return jsonify({
-            'success': True,
-            'message': '文件上传成功',
-            'file_path': file_path,
-            'original_filename': file.filename
-        })
+        if use_r2:
+            # 保存到临时文件然后上传到R2
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                file.save(temp_file.name)
+                temp_path = temp_file.name
+            
+            # 生成唯一文件名
+            file_ext = file.filename.rsplit('.', 1)[1].lower()
+            unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+            object_key = f"uploads/{unique_filename}"
+            
+            # 上传到R2
+            success, result = r2_storage.upload_file(
+                temp_path, 
+                object_key=object_key,
+                content_type=file.content_type
+            )
+            
+            # 清理临时文件
+            os.unlink(temp_path)
+            
+            if success:
+                logger.info(f"文件上传到R2成功: {result}")
+                return jsonify({
+                    'success': True,
+                    'message': '文件上传成功',
+                    'file_path': result,  # R2对象键
+                    'original_filename': file.filename,
+                    'use_r2': True
+                })
+            else:
+                logger.error(f"上传到R2失败: {result}")
+                return jsonify({'success': False, 'message': f'上传失败: {result}'}), 500
+        else:
+            # 本地存储
+            file_ext = file.filename.rsplit('.', 1)[1].lower()
+            unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+            
+            upload_folder = "uploads"
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, unique_filename)
+            file.save(file_path)
+            
+            logger.info(f"文件上传成功: {file_path}")
+            
+            return jsonify({
+                'success': True,
+                'message': '文件上传成功',
+                'file_path': file_path,
+                'original_filename': file.filename,
+                'use_r2': False
+            })
         
     except Exception as e:
         logger.error(f"文件上传失败: {str(e)}")
@@ -126,12 +170,33 @@ def process_subtitle():
         file_path = data.get('file_path')
         output_format = data.get('output_format', 'srt')
         language = data.get('language', 'zh')
+        use_r2 = data.get('use_r2', False)
         
-        if not file_path or not os.path.exists(file_path):
-            return jsonify({'success': False, 'message': '文件不存在'}), 400
+        # 检查文件是否存在（本地文件或R2文件）
+        if use_r2:
+            # R2文件，需要先下载到本地
+            try:
+                r2_storage = R2Storage()
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                    local_file_path = temp_file.name
+                
+                success, error = r2_storage.download_file(file_path, local_file_path)
+                if not success:
+                    return jsonify({'success': False, 'message': f'下载文件失败: {error}'}), 400
+                
+                file_path = local_file_path
+                temp_file_created = True
+            except Exception as e:
+                return jsonify({'success': False, 'message': f'R2存储初始化失败: {str(e)}'}), 500
+        else:
+            # 本地文件
+            if not file_path or not os.path.exists(file_path):
+                return jsonify({'success': False, 'message': '文件不存在'}), 400
+            temp_file_created = False
         
         # 初始化字幕提取器
-        extractor = SubtitleExtractor(openai_api_key=os.getenv('OPENAI_API_KEY'))
+        extractor = SubtitleExtractor(openai_api_key=os.getenv('OPENAI_API_KEY'), use_r2=use_r2)
         
         # 检查视频字幕情况
         subtitle_info = extractor.check_video_subtitles(file_path)
@@ -155,20 +220,36 @@ def process_subtitle():
         # 处理字幕
         result = extractor.process_video_subtitles(file_path, output_format)
         
+        # 清理临时文件
+        if temp_file_created and os.path.exists(file_path):
+            os.unlink(file_path)
+        
         if result['success']:
-          
-            # 获取相对路径用于下载
-            subtitle_filename = os.path.basename(result['subtitle_file'])
-            download_url = f"/api/subtitle/download/{subtitle_filename}"
-            
-            return jsonify({
-                'success': True,
-                'message': result['message'],
-                'processing_type': result['processing_type'],
-                'subtitle_format': result['subtitle_format'],
-                'download_url': download_url,
-                'filename': subtitle_filename
-            })
+            if use_r2 and result.get('download_url'):
+                # 使用R2的预签名URL
+                return jsonify({
+                    'success': True,
+                    'message': result['message'],
+                    'processing_type': result['processing_type'],
+                    'subtitle_format': result['subtitle_format'],
+                    'download_url': result['download_url'],
+                    'filename': os.path.basename(result['r2_object_key']),
+                    'use_r2': True
+                })
+            else:
+                # 本地文件下载
+                subtitle_filename = os.path.basename(result['subtitle_file'])
+                download_url = f"/api/subtitle/download/{subtitle_filename}"
+                
+                return jsonify({
+                    'success': True,
+                    'message': result['message'],
+                    'processing_type': result['processing_type'],
+                    'subtitle_format': result['subtitle_format'],
+                    'download_url': download_url,
+                    'filename': subtitle_filename,
+                    'use_r2': False
+                })
         else:
             return jsonify({
                 'success': False,
@@ -200,6 +281,39 @@ def download_subtitle(filename):
         
     except Exception as e:
         logger.error(f"下载字幕文件失败: {str(e)}")
+        return jsonify({'success': False, 'message': f'下载失败: {str(e)}'}), 500
+
+@subtitleview_bp.route('/api/subtitle/download_r2/<path:object_key>', methods=['GET'])
+def download_subtitle_r2(object_key):
+    """从R2下载字幕文件"""
+    try:
+        # 尝试使用R2存储
+        try:
+            r2_storage = R2Storage()
+        except Exception as e:
+            logger.error(f"R2存储初始化失败: {str(e)}")
+            return jsonify({'success': False, 'message': 'R2存储不可用'}), 500
+        
+        # 检查文件是否存在
+        if not r2_storage.file_exists(object_key):
+            logger.error(f"R2文件不存在: {object_key}")
+            return jsonify({'success': False, 'message': '文件不存在'}), 404
+        
+        # 生成预签名URL
+        success, url = r2_storage.get_file_url(object_key, expires_in=3600)
+        if not success:
+            logger.error(f"生成预签名URL失败: {url}")
+            return jsonify({'success': False, 'message': '生成下载链接失败'}), 500
+        
+        logger.info(f"生成R2下载链接: {object_key}")
+        return jsonify({
+            'success': True,
+            'download_url': url,
+            'filename': os.path.basename(object_key)
+        })
+        
+    except Exception as e:
+        logger.error(f"从R2下载字幕文件失败: {str(e)}")
         return jsonify({'success': False, 'message': f'下载失败: {str(e)}'}), 500
 
 @subtitleview_bp.route('/api/subtitle/check', methods=['POST'])

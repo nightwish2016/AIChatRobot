@@ -22,6 +22,13 @@
 - 音频播放和下载功能
 - 支持中文文本
 
+### 🎬 视频字幕提取
+- 支持多种视频格式
+- 内嵌字幕提取
+- 外挂字幕识别
+- AI语音识别生成字幕
+- **Cloudflare R2存储支持** - 文件不存储在本地服务器
+
 ## 🎨 现代化UI设计
 
 ### 设计特色
@@ -72,6 +79,11 @@
 - **DeepSeek API** - 中文AI模型
 - **DALL-E** - 图像生成
 - **TTS服务** - 文字转语音
+- **Whisper API** - 语音识别
+
+### 存储服务
+- **SQLite** - 本地数据库
+- **Cloudflare R2** - 对象存储（可选）
 
 ## 🚀 快速开始
 
@@ -96,6 +108,12 @@ pip install -r requirements.txt
 ```bash
 # 设置OpenAI API密钥
 export OPENAI_API_KEY="your-api-key"
+
+# 可选：配置Cloudflare R2存储（用于字幕提取功能）
+export CLOUDFLARE_ACCOUNT_ID="your-account-id"
+export R2_ACCESS_KEY_ID="your-access-key-id"
+export R2_SECRET_ACCESS_KEY="your-secret-access-key"
+export R2_BUCKET_NAME="your-bucket-name"
 ```
 
 4. 运行应用
@@ -122,9 +140,15 @@ AIChatRobot/
 │   │   └── image/              # 静态图片
 │   ├── templates/              # HTML模板
 │   ├── views/                  # 视图控制器
+│   ├── r2_storage.py          # R2存储工具类
 │   └── DB/                     # 数据库相关
 ├── logs/                       # 日志文件
-└── requirements.txt            # 依赖列表
+├── uploads/                    # 本地文件上传目录
+├── subtitles/                  # 本地字幕文件目录
+├── requirements.txt            # 依赖列表
+├── r2_config_example.env      # R2配置示例
+├── R2_STORAGE_README.md       # R2存储详细说明
+└── test_r2_storage.py         # R2存储测试脚本
 ```
 
 ## 🎯 用户体验优化
@@ -150,6 +174,17 @@ AIChatRobot/
 - ✅ 简化导航
 
 ## 🔧 自定义配置
+
+### Cloudflare R2存储配置
+
+如果您希望使用Cloudflare R2存储来存储视频和字幕文件（而不是本地存储），请参考以下配置：
+
+1. **创建R2存储桶**：在Cloudflare控制台创建R2存储桶
+2. **生成API令牌**：获取访问密钥ID和秘密访问密钥
+3. **设置环境变量**：配置必要的环境变量
+4. **运行测试**：使用 `python test_r2_storage.py` 验证配置
+
+详细配置说明请参考：[R2_STORAGE_README.md](R2_STORAGE_README.md)
 
 ### 主题颜色
 可以在CSS文件中修改主色调：
