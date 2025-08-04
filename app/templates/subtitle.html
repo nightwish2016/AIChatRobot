@@ -543,8 +543,13 @@
             const statusDiv = document.getElementById('status');
             
             // 如果是余额不足的错误，将充值链接转换为可点击的链接
-            if (type === 'error' && message.includes('充值链接')) {
-                const clickableMessage = message.replace('充值链接', `<a href="/orderPreCreate" style="color: #007bff; text-decoration: underline;">充值链接</a>`);
+            if (type === 'error' && (message.includes('充值链接') || message.includes('请充值'))) {
+                let clickableMessage = message;
+                if (message.includes('充值链接')) {
+                    clickableMessage = message.replace('充值链接', `<a href="/orderPreCreate" style="color: #007bff; text-decoration: underline;">充值链接</a>`);
+                } else if (message.includes('请充值')) {
+                    clickableMessage = message.replace('请充值', `<a href="/orderPreCreate" style="color: #007bff; text-decoration: underline;">请充值</a>`);
+                }
                 statusDiv.innerHTML = clickableMessage;
             } else {
                 statusDiv.textContent = message;

@@ -7,6 +7,7 @@ from app.subtitle_extractor import SubtitleExtractor
 from ..UserUtils import UserUtils
 from app.api.userAPI import check_login
 import logging
+from app.chatHistoryUtils import chatHistoryUtils
 
 logger = logging.getLogger(__name__)
 
@@ -132,10 +133,30 @@ def process_subtitle():
         # 初始化字幕提取器
         extractor = SubtitleExtractor(openai_api_key=os.getenv('OPENAI_API_KEY'))
         
+        # 检查视频字幕情况
+        subtitle_info = extractor.check_video_subtitles(file_path)
+        
+        # 如果需要使用OpenAI API进行语音识别，检查余额是否足够
+        if not subtitle_info['has_embedded_subtitles'] and not subtitle_info['has_external_subtitles']:
+            # 获取视频时长（分钟）
+            video_duration_seconds = extractor.get_video_duration(file_path)
+            # video_duration_minutes = video_duration_seconds / 60.0
+            
+            # 计算所需费用（每分钟0.0006元）
+            required_cost = video_duration_seconds * 0.0006/60*8
+            
+            # 检查余额是否足够
+            if balance < required_cost:
+                return jsonify({
+                    "error": "余额不足", 
+                    "message": f"当前余额: ¥{balance}，视频时长: {video_duration_seconds:.1f}秒，预计需要: ¥{required_cost:.4f}。由于余额不足无法进行这么长的视频解析，请充值"
+                }), 402
+        
         # 处理字幕
         result = extractor.process_video_subtitles(file_path, output_format)
         
         if result['success']:
+          
             # 获取相对路径用于下载
             subtitle_filename = os.path.basename(result['subtitle_file'])
             download_url = f"/api/subtitle/download/{subtitle_filename}"

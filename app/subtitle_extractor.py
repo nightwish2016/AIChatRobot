@@ -9,6 +9,9 @@ import webvtt
 from datetime import datetime, timedelta
 import re
 import openai
+from app.chatHistoryUtils import chatHistoryUtils
+from flask import Flask, request,session,jsonify
+import time
 
 # 尝试导入ffmpeg，如果失败则使用subprocess
 try:
@@ -39,6 +42,28 @@ class SubtitleExtractor:
             # 尝试从环境变量获取
             self.openai_api_key = os.getenv('OPENAI_API_KEY')
     
+    def get_video_duration(self, video_path: str) -> float:
+        """获取视频时长（秒）"""
+        try:
+            if FFMPEG_AVAILABLE:
+                probe = ffmpeg.probe(video_path)
+            else:
+                # 使用subprocess调用ffprobe
+                result = subprocess.run([
+                    'ffprobe', '-v', 'quiet', '-print_format', 'json', 
+                    '-show_format', video_path
+                ], capture_output=True, text=True)
+                if result.returncode != 0:
+                    raise Exception(f"ffprobe failed: {result.stderr}")
+                probe = json.loads(result.stdout)
+            
+            duration = float(probe['format']['duration'])
+            return duration
+            
+        except Exception as e:
+            logger.error(f"获取视频时长时出错: {str(e)}")
+            return 0.0
+
     def check_video_subtitles(self, video_path: str) -> dict:
         try:
             if FFMPEG_AVAILABLE:
@@ -120,6 +145,13 @@ class SubtitleExtractor:
     
     def generate_subtitles_with_whisper(self, audio_path: str, output_path: str, 
                                        language: str = 'zh') -> bool:
+        userId=session['user_id']                      
+        current_timestamp = time.time()
+        created=current_timestamp    
+        chargeStatus=1
+        # params= (userId,'whisper-1',20,created,chargeStatus)
+        # u=chatHistoryUtils()
+        # u.insertTranscriptionHistory(params)
         try:
             logger.info(f"开始使用OpenAI Whisper API转录音频: {audio_path}")
             
@@ -145,6 +177,14 @@ class SubtitleExtractor:
             self._save_openai_whisper_result_as_srt(transcript.model_dump(), output_path)
             
             logger.info(f"成功生成字幕: {output_path}")
+
+            #计算费用
+          
+            params= (userId,'whisper-1',transcript.usage.seconds,created,chargeStatus)
+        
+            u=chatHistoryUtils()
+            u.insertTranscriptionHistory(params)
+
             return True
             
         except Exception as e:

@@ -51,6 +51,12 @@ class SqlLiteUtil:
         self.conn.commit()
         self.cursor.close()
         self.conn.close()
+    def insertTranscriptionHistory(self,params):
+        # (userId,role,model,promptTokens,complettionTokens,totalTokens,created,GptContent,prompt,sessionid)
+        self.cursor.execute("INSERT INTO transcriptionHistory (UserId ,Model ,Duration,Created,chargeStatus  ) VALUES (?, ?,?,?,?)", params)
+        self.conn.commit()
+        self.cursor.close()
+        self.conn.close()
 
     def insertImageHistory(self,params):
         # (userId,role,model,promptTokens,complettionTokens,totalTokens,created,GptContent,prompt,sessionid)

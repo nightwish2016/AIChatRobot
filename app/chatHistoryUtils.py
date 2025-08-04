@@ -13,3 +13,5 @@ class chatHistoryUtils:
 
     def insertTtsHistory(self ,pars):
         self.db.insertTtsHistory(pars)
+    def insertTranscriptionHistory(self ,pars):
+        self.db.insertTranscriptionHistory(pars)
