@@ -447,6 +447,156 @@ def creem_webhook():
     return {"status": "ok"}
 
 
+@orderCreationview_bp.route('/creem_webhook_prod_test', methods=['POST'])
+def creem_webhook_prodTest():
+    """处理Creem支付回调"""
+    try:
+        import hmac
+        import hashlib
+        
+        # 获取webhook密钥
+        from ..config import creem_config
+        webhook_secret = creem_config.get_webhook_secret()
+        
+        if not webhook_secret:
+            logger.error("[ERROR] Webhook密钥未配置，请检查.env文件中的配置")
+            abort(500, "Webhook secret not configured")
+        
+        # 验证签名
+        payload = request.get_data()
+        received_sig = request.headers.get("creem-signature", "")
+        computed_sig = hmac.new(
+            key=webhook_secret.encode('utf-8'),
+            msg=payload,
+            digestmod=hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(computed_sig, received_sig):
+            logger.error("[ERROR] Creem webhook签名验证失败！")
+            abort(401, "Invalid signature")
+        
+        logger.info("Creem webhook签名验证成功！")
+        
+        # 解析webhook数据
+        webhook_data = json.loads(payload.decode('utf-8'))
+        event_type = webhook_data.get("eventType")
+        event_data = DictToObj(webhook_data.get("object", {}))
+
+        
+        logger.info(f"收到Creem webhook事件: {event_type}")
+        
+        if event_type == "checkout.completed":
+            # 处理支付成功事件
+            checkout_id = event_data.id
+            product_id = event_data.order.product
+            amount = event_data.order.amount / 100  # Creem的金额是以分为单位
+            currency = event_data.order.currency
+            customer_id = event_data.order.customer
+            order_id = event_data.order.id
+            status = event_data.order.status
+            # payment_time = event_data.completed_at 
+            amount=event_data.order.amount / 100  # 转换为美元
+            amount_paid=event_data.order.amount / 100  # 转换为美元
+            tax_amount=event_data.order.tax_amount / 100  # 转换为美元
+            trans_type=event_data.order.type
+            channel="bankcard"
+            description=f"AI Chat充值 - {amount}元"
+            mode=event_data.order.mode
+
+            customer_email = event_data.customer.email
+            
+            logger.info(f"  Creem支付成功!")
+            logger.info(f"   Checkout ID: {checkout_id}")
+            logger.info(f"   Product ID: {product_id}")
+            logger.info(f"   金额: {amount} {currency}")
+            logger.info(f"   客户邮箱: {customer_email}")
+            
+            # 处理支付成功逻辑
+            out_trade_no = f"creem_{checkout_id}"
+            
+            # 更新支付状态
+            u = payUtils()
+            trans = {
+                "out_trade_no": out_trade_no,
+                "pay_success": True,
+                "detail": json.dumps(webhook_data.get("object", {}))
+            }
+            
+            # 存储到Redis
+            redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
+            redis_client.set(f'fundTrans:{out_trade_no}', json.dumps(trans), ex=600)
+            
+            # 处理银行卡交易记录和余额更新
+            try:
+                
+                
+                # 获取支付时间，如果没有则使用当前时间
+                payment_time = webhook_data.get('completed_at') or datetime.datetime.now().isoformat()
+                
+                # 准备银行卡交易数据
+                transaction_data = (
+                    checkout_id,                        # checkout_id (新增字段，用于幂等性检查)
+                    order_id,                           # order_id
+                    product_id,                         # product_id  
+                    f"merchant_{checkout_id}",          # merchant_trans_no
+                    customer_id,                        # customer_id
+                    status,                             # status
+                    payment_time,                       # send_pay_date
+                    amount,                             # amount (转换为元)
+                    amount_paid,                        # amount_paid (转换为元)
+                    tax_amount,                         # tax_amount
+                    trans_type,                         # trans_type
+                    channel,                            # channel
+                    currency.upper(),                   # currency
+                    datetime.datetime.now().isoformat(), # create_date
+                    description,                        # description
+                    mode                                # mode
+                )
+                
+                # 插入银行卡交易记录并更新用户余额
+                result = u.InsertBankCardTransaction(transaction_data, customer_email, amount_paid)
+                
+                if result["success"]:
+                    logger.info(f"[SUCCESS] 银行卡交易记录已保存，用户余额已更新")
+                    logger.info(f"   用户ID: {result['user_id']}, 充值金额: {amount_paid}元")
+                    
+                    # 清除用户余额缓存，让下次查询从数据库获取最新余额
+                    redis_key = f'useid:{result["user_id"]}'
+                    redis_client.delete(redis_key)
+                    logger.info(f"[SUCCESS] 已清除用户余额缓存: {redis_key}")
+                elif result.get("error") == "duplicate_transaction":
+                    logger.warning(f"[WARNING] 重复交易被忽略: {result.get('message', '')}")
+                    logger.info(f"   这是正常的webhook重试，无需处理")
+                else:
+                    logger.error(f"[ERROR] 银行卡交易处理失败: {result['error']}")
+                    
+            except Exception as bank_error:
+                logger.error(f"[ERROR] 银行卡交易处理异常: {str(bank_error)}")
+            
+            # 这里可以添加更多业务逻辑，比如发送确认邮件等
+            
+        elif event_type == "checkout.failed":
+            # 处理支付失败事件
+            checkout_id = event_data.id
+            failure_reason = event_data.failure_reason
+            logger.error(f"[ERROR] Creem支付失败！Checkout ID: {checkout_id}, 原因: {failure_reason}")
+            
+        elif event_type == "checkout.expired":
+            # 处理支付过期事件
+            checkout_id = event_data.id
+            logger.warning(f"[WARNING] Creem支付过期！Checkout ID: {checkout_id}")
+            
+        else:
+            logger.info(f"[INFO] 未处理的Creem事件类型: {event_type}")
+            
+    except Exception as e:
+        logger.error(f"[ERROR] Creem webhook处理异常: {str(e)}")
+        return {"status": "error", "message": str(e)}, 500
+    
+    return {"status": "ok"}
+
+
+
 def qr_generate(data,out_trade_no):
         
     # 创建QRCode对象
