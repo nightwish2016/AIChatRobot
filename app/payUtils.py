@@ -21,13 +21,24 @@ class payUtils:
         try:
             self.db.cursor.execute("BEGIN;")
             
+            # 记录输入参数的类型和值，用于调试
+            logger.info(f"支付宝交易输入参数 - 金额: {loadAmount_cny} (类型: {type(loadAmount_cny)})")
+            
             # 支付宝支付金额是人民币，需要转换为美元存储
             converter = get_currency_converter()
             loadAmount_usd = converter.cny_to_usd(loadAmount_cny)
             
             logger.info(f"支付宝支付转换: {loadAmount_cny} CNY = {loadAmount_usd} USD")
             
-            self.db.insertFundTransaction(paramTrans)
+            # 更新paramTrans中的total_amount为美元金额
+            # paramTrans格式: (userId,out_trade_no,buyer_logon_id,trade_status,total_amount,send_pay_date,trade_no,timestamp)
+            paramTrans_updated = list(paramTrans)
+            paramTrans_updated[4] = loadAmount_usd  # 索引4是total_amount字段
+            paramTrans_updated = tuple(paramTrans_updated)
+            
+            logger.info(f"更新交易记录: 原始金额¥{loadAmount_cny} -> 存储金额${loadAmount_usd}")
+            
+            self.db.insertFundTransaction(paramTrans_updated)
             barcodekey=barcodekey+","
             self.db.updateBarCodeStatuskey(barcodekey.split(','))
             
@@ -78,7 +89,7 @@ class payUtils:
             
             userid = user_result[0]['id']
             
-            logger.info(f"银行卡支付: {amount_usd} USD 直接存储到余额")
+            logger.info(f"银行卡支付: ${amount_usd} 直接存储到余额")
             
             # 插入银行卡交易记录
             self.db.insertFundTransactionBank(transaction_data)

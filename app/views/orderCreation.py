@@ -192,11 +192,19 @@ def handle_alipay_payment(amount):
     qr_code = ali_face_pay.precreate(out_trade_no, amount, "AIChat")
 
     # add barcode data to barcode table
+    # 支付宝支付金额是人民币，需要转换为美元存储
+    from app.currency_utils import get_currency_converter
+    converter = get_currency_converter()
+    amount_usd = converter.cny_to_usd(amount)
+    
+    logger.info(f"支付宝二维码生成 - 用户支付: ¥{amount}, 存储金额: ${amount_usd}")
+    
     u = payUtils()
     current_time = datetime.datetime.now()
     timestamp = int(current_time.timestamp())
     userId = session['user_id']  
-    param = (userId, out_trade_no, 1, amount, timestamp)
+    # 存储转换后的美元金额到barCode表
+    param = (userId, out_trade_no, 1, amount_usd, timestamp)
     u.inseBarCode(param)
 
     qr_generate(qr_code, out_trade_no)

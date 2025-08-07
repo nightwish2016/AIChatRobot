@@ -98,11 +98,18 @@ class CurrencyConverter:
         将人民币转换为美元
         
         Args:
-            cny_amount: 人民币金额
+            cny_amount: 人民币金额（可以是字符串或数字）
             
         Returns:
             float: 美元金额，保留2位小数
         """
+        try:
+            # 确保输入是数字类型
+            cny_amount = float(cny_amount)
+        except (ValueError, TypeError) as e:
+            logger.error(f"人民币金额格式错误: {cny_amount}, 错误: {str(e)}")
+            raise ValueError(f"无效的人民币金额: {cny_amount}")
+            
         rate = self.get_exchange_rate("CNY", "USD")
         usd_amount = cny_amount * rate
         return round(usd_amount, 2)
@@ -112,11 +119,18 @@ class CurrencyConverter:
         将美元转换为人民币
         
         Args:
-            usd_amount: 美元金额
+            usd_amount: 美元金额（可以是字符串或数字）
             
         Returns:
             float: 人民币金额，保留2位小数
         """
+        try:
+            # 确保输入是数字类型
+            usd_amount = float(usd_amount)
+        except (ValueError, TypeError) as e:
+            logger.error(f"美元金额格式错误: {usd_amount}, 错误: {str(e)}")
+            raise ValueError(f"无效的美元金额: {usd_amount}")
+            
         rate = self.get_exchange_rate("CNY", "USD")
         cny_amount = usd_amount / rate
         return round(cny_amount, 2)
