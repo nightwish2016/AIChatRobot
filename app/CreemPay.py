@@ -69,7 +69,7 @@ class CreemPay:
                 "name": name,
                 "description": description or f"充值{price}元",
                 "price": price_in_cents,  # 以分为单位
-                "currency": "CNY",
+                "currency": "USD",
                 "billing_type": "onetime",
                 "tax_mode": "inclusive",
                 "tax_category": "saas"
