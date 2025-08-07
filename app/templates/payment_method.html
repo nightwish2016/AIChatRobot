@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选择支付方式</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+            font-weight: 600;
+        }
+
+        .payment-info {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .payment-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .payment-option {
+            background: white;
+            border: 2px solid #e1e5e9;
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .payment-option:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .payment-option.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .payment-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .payment-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .payment-icon {
+            font-size: 2rem;
+        }
+
+        .payment-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        .recommendation {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #856404;
+        }
+
+        .recommendation.recommended {
+            background: rgba(40, 167, 69, 0.1);
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            opacity: 0.7;
+        }
+        
+        button:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/orderPreCreate" class="nav-link">← 返回充值</a>
+        
+        <h2>选择支付方式</h2>
+        
+        <form id="paymentForm" action="/amount_input" method="get">
+            <input type="hidden" name="user_email" value="{{user_email}}">
+            <input type="hidden" name="payment_method" id="paymentMethod" value="">
+            
+            <div class="payment-methods">
+                <div class="payment-option" data-method="alipay">
+                    <div class="payment-header">
+                        <div>
+                            <div class="payment-title">支付宝支付</div>
+                            <div class="payment-icon">💰</div>
+                        </div>
+                    </div>
+                    <div class="payment-description">
+                        使用支付宝扫码支付，支持余额、银行卡、花呗等多种支付方式
+                    </div>
+                    <div class="recommendation" id="alipayRecommendation">
+                        推荐中国大陆用户使用
+                    </div>
+                </div>
+                
+                <div class="payment-option" data-method="bankcard">
+                    <div class="payment-header">
+                        <div>
+                            <div class="payment-title">银行卡支付</div>
+                            <div class="payment-icon">💳</div>
+                        </div>
+                    </div>
+                    <div class="payment-description">
+                        使用银行卡直接支付，支持Visa、MasterCard、银联等国际卡组织
+                    </div>
+                    <div class="recommendation" id="bankcardRecommendation">
+                        推荐海外用户使用
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" id="submitBtn" disabled>下一步</button>
+        </form>
+    </div>
+
+    <script>
+        function detectUserLocation() {
+            const language = navigator.language || navigator.userLanguage;
+            const isMainlandChina = language.includes('zh-CN') || language.includes('zh-Hans');
+            return isMainlandChina;
+        }
+
+        function setRecommendations() {
+            const isMainlandChina = detectUserLocation();
+            
+            const alipayRecommendation = document.getElementById('alipayRecommendation');
+            const bankcardRecommendation = document.getElementById('bankcardRecommendation');
+            
+            if (isMainlandChina) {
+                alipayRecommendation.textContent = '✅ 推荐：中国大陆用户建议使用支付宝支付';
+                alipayRecommendation.classList.add('recommended');
+                bankcardRecommendation.textContent = '💡 提示：海外用户建议使用银行卡支付';
+            } else {
+                bankcardRecommendation.textContent = '✅ 推荐：海外用户建议使用银行卡支付';
+                bankcardRecommendation.classList.add('recommended');
+                alipayRecommendation.textContent = '💡 提示：中国大陆用户建议使用支付宝支付';
+            }
+        }
+
+        const paymentOptions = document.querySelectorAll('.payment-option');
+        const submitBtn = document.getElementById('submitBtn');
+        const paymentMethodInput = document.getElementById('paymentMethod');
+
+        paymentOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                paymentOptions.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                const method = this.dataset.method;
+                paymentMethodInput.value = method;
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = `选择${method === 'alipay' ? '支付宝' : '银行卡'}支付`;
+            });
+        });
+
+        window.addEventListener('load', setRecommendations);
+        
+        // 表单提交验证
+        document.getElementById('paymentForm').addEventListener('submit', function(event) {
+            const selectedMethod = paymentMethodInput.value;
+            
+            if (!selectedMethod) {
+                alert('请选择支付方式');
+                event.preventDefault();
+                return;
+            }
+            
+            // 禁用按钮并显示跳转中
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '跳转中...';
+            submitBtn.style.cursor = 'not-allowed';
+            
+            // 防止重复提交
+            event.preventDefault();
+            
+            // 提交表单
+            this.submit();
+        });
+    </script>
+</body>
+</html> 

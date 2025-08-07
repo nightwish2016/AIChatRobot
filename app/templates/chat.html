@@ -43,7 +43,9 @@
         <div id="popup">  
             <div id="balance">余额: ¥{{balance}}</div>  
             <div id="fund">
-                <form action="/orderPreCreate">
+                <form action="/payment_method" method="get">
+                    <input type="hidden" name="user_email" value="{{ user_email }}">
+                    <input type="hidden" name="amount" value="10">
                     <button id="fund" type="submit">充值</button>
                 </form>
             </div>  

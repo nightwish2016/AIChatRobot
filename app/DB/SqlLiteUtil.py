@@ -109,6 +109,32 @@ class SqlLiteUtil:
     def activateUser(self,userid):
         self.cursor.execute("update user set activate=1 where id in ({})".format(userid))                 
         self.conn.commit()
+    
+    def insertFundTransactionBank(self, params):
+        """
+        插入银行卡交易记录到FundTransaction_bank表
+        params: (checkout_id, order_id, product_id, merchant_trans_no, customer_id, status, 
+                send_pay_date, amount, amount_paid, tax_amount, trans_type, 
+                channel, currency, create_date, description, mode)
+        """
+        self.cursor.execute("""
+            INSERT INTO FundTransaction_bank (
+                checkout_id, order_id, product_id, merchant_trans_no, customer_id, status,
+                send_pay_date, amount, amount_paid, tax_amount, trans_type,
+                channel, currency, create_date, description, mode
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, params)
+    
+    def getUserIdByEmail(self, email):
+        """根据邮箱获取用户ID"""
+        query = "SELECT id FROM user WHERE email = ?"
+        return self.query(query, (email,))
+    
+    def checkTransactionExists(self, checkout_id):
+        """检查checkout_id是否已经存在"""
+        query = "SELECT COUNT(*) as count FROM FundTransaction_bank WHERE checkout_id = ?"
+        result = self.query(query, (checkout_id,))
+        return result[0]['count'] > 0 if result else False
 
 # CREATE TABLE fundTransaction(
 #  Id INTEGER PRIMARY KEY AUTOINCREMENT,

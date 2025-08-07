@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template,session,request,make_response,jsonify,Response,current_app,url_for,redirect
+from flask import Blueprint, render_template,session,request,make_response,jsonify,Response,current_app,url_for,redirect,abort
 from app.alifacepay import AliFacePay
 from threading import Lock
 import qrcode
@@ -6,11 +6,13 @@ from PIL import Image
 import time
 from app.payUtils import payUtils
 import datetime
+import os
 
 import redis
 import json
 import logging 
 from ..UserUtils import UserUtils
+from dataclasses import dataclass, asdict
 orderCreationview_bp = Blueprint('orderCreation', __name__)
 
 
@@ -23,6 +25,44 @@ def orderPreCreate():
     userInfo=u.getUserInfo(session['user_id'])
     balance = userInfo['balance']
     return render_template('orderPreCreate.html',user_email=user_email,balance=round(balance,2))
+
+@orderCreationview_bp.route('/payment_method')
+def payment_method():
+    user_email = request.args.get('user_email')
+    
+    # 如果没有提供用户邮箱，从session获取
+    if not user_email:
+        user_email = session.get('user_email', '')
+    
+    return render_template('payment_method.html', 
+                         user_email=user_email)
+
+@orderCreationview_bp.route('/amount_input')
+def amount_input():
+    user_email = request.args.get('user_email')
+    payment_method = request.args.get('payment_method')
+    
+    # 如果没有提供用户邮箱，从session获取
+    if not user_email:
+        user_email = session.get('user_email', '')
+    
+    # 验证支付方式
+    if payment_method not in ['alipay', 'bankcard']:
+        return redirect('/payment_method')
+    
+    return render_template('amount_input.html', 
+                         user_email=user_email,
+                         payment_method=payment_method)
+
+@orderCreationview_bp.route('/bankcard_payment')
+def bankcard_payment():
+    """银行卡支付页面"""
+    amount = request.args.get('amount', '10')
+    error = request.args.get('error', '')
+    
+    return render_template('bankcard_payment.html', 
+                         amount=amount, 
+                         error=error)
 
 
 
@@ -62,44 +102,101 @@ def query_order():
     # return render_template('template.html', qr_image_path=qr_image_path)
    
 
+@orderCreationview_bp.route("/payment_success")
+def payment_success():
+    order_id = request.args.get("order_id", "")
+    return render_template("payment_success.html", order_id=order_id)
 
 @orderCreationview_bp.route('/create_trade')
 def  create_trade():  
     # email=request.args.get('user_email')
     amount=request.args.get('amount')
     otherAmount=request.args.get('otherAmount')
-    if otherAmount!="":
+    payment_method=request.args.get('payment_method', 'alipay')
+    
+    if otherAmount and otherAmount != "" and otherAmount != "None":
         amount=otherAmount
-    out_trade_no = AliFacePay.gen_trade_no('yqhs')
-    ali_face_pay=current_app.ali_face_pay
+    
     amount=float(amount)
-    qr_code = ali_face_pay.precreate(out_trade_no,amount, "AIChat")
+    
+    # 根据支付方式选择不同的处理逻辑
+    if payment_method == 'bankcard':
+        # 银行卡支付逻辑
+        return handle_bankcard_payment(amount)
+    else:
+        # 支付宝支付逻辑（原有逻辑）
+        return handle_alipay_payment(amount)
 
-    #add barcode data to barcode table
-    u=payUtils()
-    current_time=datetime.datetime.now()
-    timestamp=int(current_time.timestamp())
-    userId=session['user_id']  
-    param=(userId,out_trade_no,1,amount,timestamp)
+def handle_bankcard_payment(amount):
+    """处理银行卡支付"""
+    try:
+        # 获取用户邮箱
+        user_email = session.get('user_email', '')
+        
+        # 设置成功和取消URL
+        success_url = url_for('orderCreation.payment_success', _external=True)
+        # success_url = "http://localhost:5000/payment_success"
+        cancel_url = url_for('orderCreation.payment_method', _external=True)
+        
+        # 调用Creem支付服务
+        creem_pay = current_app.creem_pay
+        result = creem_pay.process_bankcard_payment(
+            amount=amount,
+            user_email=user_email,
+            success_url=success_url,
+            cancel_url=cancel_url
+        )
+        
+        if result["success"]:
+            checkout_url = result["checkout_url"]
+            checkout_id = result["checkout_id"]
+            product_id = result["product_id"]
+            
+            # 记录支付信息到数据库
+           # u = payUtils()
+            current_time = datetime.datetime.now()
+            timestamp = int(current_time.timestamp())
+            userId = session['user_id']
+            
+            # 使用checkout_id作为订单号
+            out_trade_no = f"creem_{checkout_id}"
+          #  param = (userId, out_trade_no, 1, amount, timestamp)
+            # u.inseBarCode(param)
+            
+            logger.info(f"银行卡支付创建成功，跳转到: {checkout_url}")
+            return redirect(checkout_url)
+        else:
+            logger.error(f"银行卡支付创建失败: {result.get('error')}")
+            return render_template('bankcard_payment.html', 
+                                amount=amount, 
+                                error=result.get('error', '支付创建失败'))
+    
+    except Exception as e:
+        logger.error(f"银行卡支付异常: {str(e)}")
+        return render_template('bankcard_payment.html', 
+                            amount=amount, 
+                            error=f"支付处理异常: {str(e)}")
+
+def handle_alipay_payment(amount):
+    """处理支付宝支付"""
+    out_trade_no = AliFacePay.gen_trade_no('yqhs')
+    ali_face_pay = current_app.ali_face_pay
+    qr_code = ali_face_pay.precreate(out_trade_no, amount, "AIChat")
+
+    # add barcode data to barcode table
+    u = payUtils()
+    current_time = datetime.datetime.now()
+    timestamp = int(current_time.timestamp())
+    userId = session['user_id']  
+    param = (userId, out_trade_no, 1, amount, timestamp)
     u.inseBarCode(param)
 
-
-    # 为订单加锁
-     
-    
-
-    # if out_trade_no not in locks:
-    #     # l = Lock()
-    #     # l.acquire()       
-    #     # locks[out_trade_no] = l
-    #     payment_status = None
-    #     status_lock = threading.Lock()
-    
-
-    qr_generate(qr_code,out_trade_no)
+    qr_generate(qr_code, out_trade_no)
     qr_image_path = url_for('static', filename=f'QR/{out_trade_no}.png')
-    # return render_template('template.html', qr_image_path=qr_image_path)
-    return render_template('show_qrcode.html', qrcode_url=qr_code, out_trade_no=out_trade_no,qr_image_path=qr_image_path)
+    return render_template('show_qrcode.html', 
+                         qrcode_url=qr_code, 
+                         out_trade_no=out_trade_no,
+                         qr_image_path=qr_image_path)
 
 
 
@@ -199,6 +296,156 @@ def pay_success():
     return render_template('pay_success.html')
 
 
+
+@orderCreationview_bp.route('/creem_webhook', methods=['POST'])
+def creem_webhook():
+    """处理Creem支付回调"""
+    try:
+        import hmac
+        import hashlib
+        
+        # 获取webhook密钥
+        from ..config import creem_config
+        webhook_secret = creem_config.get_webhook_secret()
+        
+        if not webhook_secret:
+            logger.error("[ERROR] Webhook密钥未配置，请检查.env文件中的配置")
+            abort(500, "Webhook secret not configured")
+        
+        # 验证签名
+        payload = request.get_data()
+        received_sig = request.headers.get("creem-signature", "")
+        computed_sig = hmac.new(
+            key=webhook_secret.encode('utf-8'),
+            msg=payload,
+            digestmod=hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(computed_sig, received_sig):
+            logger.error("[ERROR] Creem webhook签名验证失败！")
+            abort(401, "Invalid signature")
+        
+        logger.info("Creem webhook签名验证成功！")
+        
+        # 解析webhook数据
+        webhook_data = json.loads(payload.decode('utf-8'))
+        event_type = webhook_data.get("eventType")
+        event_data = DictToObj(webhook_data.get("object", {}))
+
+        
+        logger.info(f"收到Creem webhook事件: {event_type}")
+        
+        if event_type == "checkout.completed":
+            # 处理支付成功事件
+            checkout_id = event_data.id
+            product_id = event_data.order.product
+            amount = event_data.order.amount / 100  # Creem的金额是以分为单位
+            currency = event_data.order.currency
+            customer_id = event_data.order.customer
+            order_id = event_data.order.id
+            status = event_data.order.status
+            # payment_time = event_data.completed_at 
+            amount=event_data.order.amount / 100  # 转换为美元
+            amount_paid=event_data.order.amount / 100  # 转换为美元
+            tax_amount=event_data.order.tax_amount / 100  # 转换为美元
+            trans_type=event_data.order.type
+            channel="bankcard"
+            description=f"AI Chat充值 - {amount}元"
+            mode=event_data.order.mode
+
+            customer_email = event_data.customer.email
+            
+            logger.info(f"  Creem支付成功!")
+            logger.info(f"   Checkout ID: {checkout_id}")
+            logger.info(f"   Product ID: {product_id}")
+            logger.info(f"   金额: {amount} {currency}")
+            logger.info(f"   客户邮箱: {customer_email}")
+            
+            # 处理支付成功逻辑
+            out_trade_no = f"creem_{checkout_id}"
+            
+            # 更新支付状态
+            u = payUtils()
+            trans = {
+                "out_trade_no": out_trade_no,
+                "pay_success": True,
+                "detail": json.dumps(webhook_data.get("object", {}))
+            }
+            
+            # 存储到Redis
+            redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
+            redis_client.set(f'fundTrans:{out_trade_no}', json.dumps(trans), ex=600)
+            
+            # 处理银行卡交易记录和余额更新
+            try:
+                
+                
+                # 获取支付时间，如果没有则使用当前时间
+                payment_time = webhook_data.get('completed_at') or datetime.datetime.now().isoformat()
+                
+                # 准备银行卡交易数据
+                transaction_data = (
+                    checkout_id,                        # checkout_id (新增字段，用于幂等性检查)
+                    order_id,                           # order_id
+                    product_id,                         # product_id  
+                    f"merchant_{checkout_id}",          # merchant_trans_no
+                    customer_id,                        # customer_id
+                    status,                             # status
+                    payment_time,                       # send_pay_date
+                    amount,                             # amount (转换为元)
+                    amount_paid,                        # amount_paid (转换为元)
+                    tax_amount,                         # tax_amount
+                    trans_type,                         # trans_type
+                    channel,                            # channel
+                    currency.upper(),                   # currency
+                    datetime.datetime.now().isoformat(), # create_date
+                    description,                        # description
+                    mode                                # mode
+                )
+                
+                # 插入银行卡交易记录并更新用户余额
+                result = u.InsertBankCardTransaction(transaction_data, customer_email, amount_paid)
+                
+                if result["success"]:
+                    logger.info(f"[SUCCESS] 银行卡交易记录已保存，用户余额已更新")
+                    logger.info(f"   用户ID: {result['user_id']}, 充值金额: {amount_paid}元")
+                    
+                    # 清除用户余额缓存，让下次查询从数据库获取最新余额
+                    redis_key = f'useid:{result["user_id"]}'
+                    redis_client.delete(redis_key)
+                    logger.info(f"[SUCCESS] 已清除用户余额缓存: {redis_key}")
+                elif result.get("error") == "duplicate_transaction":
+                    logger.warning(f"[WARNING] 重复交易被忽略: {result.get('message', '')}")
+                    logger.info(f"   这是正常的webhook重试，无需处理")
+                else:
+                    logger.error(f"[ERROR] 银行卡交易处理失败: {result['error']}")
+                    
+            except Exception as bank_error:
+                logger.error(f"[ERROR] 银行卡交易处理异常: {str(bank_error)}")
+            
+            # 这里可以添加更多业务逻辑，比如发送确认邮件等
+            
+        elif event_type == "checkout.failed":
+            # 处理支付失败事件
+            checkout_id = event_data.id
+            failure_reason = event_data.failure_reason
+            logger.error(f"[ERROR] Creem支付失败！Checkout ID: {checkout_id}, 原因: {failure_reason}")
+            
+        elif event_type == "checkout.expired":
+            # 处理支付过期事件
+            checkout_id = event_data.id
+            logger.warning(f"[WARNING] Creem支付过期！Checkout ID: {checkout_id}")
+            
+        else:
+            logger.info(f"[INFO] 未处理的Creem事件类型: {event_type}")
+            
+    except Exception as e:
+        logger.error(f"[ERROR] Creem webhook处理异常: {str(e)}")
+        return {"status": "error", "message": str(e)}, 500
+    
+    return {"status": "ok"}
+
+
 def qr_generate(data,out_trade_no):
         
     # 创建QRCode对象
@@ -235,3 +482,11 @@ def qr_generate(data,out_trade_no):
 
     logger.info(f"二维码已生成并保存为 {filename}")
 
+
+
+class DictToObj:
+    def __init__(self, data):
+        for key, value in data.items():
+            if isinstance(value, dict):
+                value = DictToObj(value)  # 递归转换
+            self.__dict__[key] = value

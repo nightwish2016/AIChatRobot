@@ -265,7 +265,7 @@
             <div id="balance">余额: ¥{{balance}}</div>  
             <div id="fund">
                 <form action="/orderPreCreate">
-                    <button id="fund" type="submit">充值</button>
+                    <button id="fund" type="submit" onclick="window.location.href='/payment_method?user_email={{ user_email }}&amount=10'; return false;">充值</button>
                 </form>
             </div>        
             <form action="/logout">
@@ -602,9 +602,9 @@
             if (type === 'error' && (message.includes('充值链接') || message.includes('请充值'))) {
                 let clickableMessage = message;
                 if (message.includes('充值链接')) {
-                    clickableMessage = message.replace('充值链接', `<a href="/orderPreCreate" style="color: #007bff; text-decoration: underline;">充值链接</a>`);
+                    clickableMessage = message.replace('充值链接', `<a href="/payment_method?user_email={{ user_email }}&amount=10" style="color: #007bff; text-decoration: underline;">充值链接</a>`);
                 } else if (message.includes('请充值')) {
-                    clickableMessage = message.replace('请充值', `<a href="/orderPreCreate" style="color: #007bff; text-decoration: underline;">请充值</a>`);
+                    clickableMessage = message.replace('请充值', `<a href="/payment_method?user_email={{ user_email }}&amount=10" style="color: #007bff; text-decoration: underline;">请充值</a>`);
                 }
                 statusDiv.innerHTML = clickableMessage;
             } else {

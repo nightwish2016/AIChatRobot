@@ -116,7 +116,7 @@
             <div id="balance">余额: ¥{{balance}}</div>  
             <div id="fund">
                 <form action="/orderPreCreate">
-                    <button id="fund" type="submit">充值</button>
+                    <button id="fund" type="submit" onclick="window.location.href='/payment_method?user_email={{ user_email }}&amount=10'; return false;">充值</button>
                 </form>
             </div>        
             <form action="/logout">

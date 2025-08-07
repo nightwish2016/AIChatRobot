@@ -12,6 +12,7 @@ from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 import os
 from app.alifacepay import AliFacePay
+from app.CreemPay import CreemPay
 from threading import Lock
 
 # logging.basicConfig(level=logging.INFO)
@@ -108,6 +109,16 @@ def create_app():
     ali_face_pay = AliFacePay(app_id, app_private_key_string, alipay_public_key_string,
                     'https://nightwish.tech/alipay_nofity', sandbox)
     app.ali_face_pay=ali_face_pay
+    
+    # 初始化Creem支付服务（使用新的配置系统）
+    try:
+        creem_pay = CreemPay()  # 将自动从配置文件加载配置
+        app.creem_pay = creem_pay
+        app.logger.info("Creem支付服务初始化成功")
+    except ValueError as e:
+        app.logger.error(f"Creem支付服务初始化失败: {str(e)}")
+        # 可以选择继续运行或退出，取决于业务需求
+        # raise e
 
     from .views.chat import chatview_bp
     from .views.image import imageview_bp
