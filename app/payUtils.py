@@ -13,18 +13,43 @@ class payUtils:
     def inseBarCode(self ,pars   ):
         self.db.insertBarCode(pars)
     
-    def InsertFundTransaction(self,paramTrans,barcodekey,userid,loadAmount):
+    def InsertFundTransaction(self,paramTrans,barcodekey,userid,loadAmount_cny):
+        """
+        处理支付宝交易：插入交易记录并更新用户余额
+        支付宝支付是人民币，需要转换为美元存储到余额中
+        """
         try:
             self.db.cursor.execute("BEGIN;")
+            
+            # 支付宝支付金额是人民币，需要转换为美元存储
+            converter = get_currency_converter()
+            loadAmount_usd = converter.cny_to_usd(loadAmount_cny)
+            
+            logger.info(f"支付宝支付转换: {loadAmount_cny} CNY = {loadAmount_usd} USD")
+            
             self.db.insertFundTransaction(paramTrans)
             barcodekey=barcodekey+","
             self.db.updateBarCodeStatuskey(barcodekey.split(','))
-            param=(loadAmount,userid)
-            self.db.updateCustomerBalance(loadAmount,userid)
+            
+            # 更新用户余额（用转换后的美元金额）
+            self.db.updateCustomerBalance(loadAmount_usd,userid)
             self.db.conn.commit()
+            
+            return {
+                "success": True,
+                "amount_cny": loadAmount_cny,
+                "amount_usd": loadAmount_usd,
+                "exchange_rate": converter.get_exchange_rate("CNY", "USD")
+            }
+            
         except sqlite3.Error as e:
-            print('sqlite3.Error occurred:', e.args[0])
+            logger.error(f'支付宝交易sqlite3错误: {e.args[0]}')
             self.db.conn.rollback()
+            raise e
+        except Exception as e:
+            logger.error(f'支付宝交易处理错误: {str(e)}')
+            self.db.conn.rollback()
+            raise e
         finally:
             # 关闭游标和连接
             self.db.cursor.close()
@@ -34,7 +59,7 @@ class payUtils:
         """
         处理银行卡交易：插入交易记录并更新用户余额
         包含幂等性检查，防止重复处理
-        银行卡支付是美元，需要转换为人民币存储到余额中
+        银行卡支付是美元，直接存储到余额中
         """
         try:
             # 获取checkout_id（transaction_data的第一个元素）
@@ -53,25 +78,19 @@ class payUtils:
             
             userid = user_result[0]['id']
             
-            # 银行卡支付金额是美元，需要转换为人民币
-            converter = get_currency_converter()
-            amount_cny = converter.usd_to_cny(amount_usd)
+            logger.info(f"银行卡支付: {amount_usd} USD 直接存储到余额")
             
-            logger.info(f"银行卡支付转换: {amount_usd} USD = {amount_cny} CNY")
-            
-            # 插入银行卡交易记录（保留原始美元金额）
+            # 插入银行卡交易记录
             self.db.insertFundTransactionBank(transaction_data)
             
-            # 更新用户余额（用转换后的人民币金额）
-            self.db.updateCustomerBalance(amount_cny, userid)
+            # 更新用户余额（直接使用美元金额）
+            self.db.updateCustomerBalance(amount_usd, userid)
             
             self.db.conn.commit()
             return {
                 "success": True, 
                 "user_id": userid,
-                "amount_usd": amount_usd,
-                "amount_cny": amount_cny,
-                "exchange_rate": converter.get_exchange_rate("CNY", "USD")
+                "amount_usd": amount_usd
             }
         except sqlite3.Error as e:
             logger.error(f'银行卡交易sqlite3错误: {e.args[0]}')

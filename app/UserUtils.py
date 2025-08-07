@@ -116,10 +116,23 @@ class UserUtils:
         
         # 添加货币转换功能
         converter = get_currency_converter()
-        balance_cny = userInfo["balance"]  # 数据库中存储的是人民币
+        balance_usd = userInfo["balance"]  # 数据库中存储的是美元
         
-        # 获取双货币显示
-        currency_info = converter.get_dual_currency_display(balance_cny)
+        # 将美元余额转换为人民币
+        balance_cny = converter.usd_to_cny(balance_usd)
+        
+        # 准备双货币信息
+        currency_info = {
+            "cny": {
+                "amount": balance_cny,
+                "formatted": converter.format_currency(balance_cny, "CNY")
+            },
+            "usd": {
+                "amount": balance_usd,
+                "formatted": converter.format_currency(balance_usd, "USD")
+            },
+            "display": f"¥{balance_cny:.2f} (${balance_usd:.2f})"
+        }
         
         # 根据首选货币设置主要显示
         if currency_preference == "USD":
