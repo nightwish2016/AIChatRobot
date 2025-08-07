@@ -4,6 +4,7 @@ import json
 import datetime
 import logging
 from app.SendMail import SendMail
+from app.currency_utils import get_currency_converter
 logger = logging.getLogger('log')
 class UserUtils:
     def __init__(self):
@@ -98,6 +99,42 @@ class UserUtils:
             redis_client.set(f'useid:{userid}',  json.dumps(userInfo),ex=120)   
         else:   
             userInfo=json.loads(result)       
+        return userInfo
+    
+    def getUserInfoWithCurrency(self, userid, currency_preference="CNY"):
+        """
+        获取用户信息，包含货币转换后的余额显示
+        
+        Args:
+            userid: 用户ID
+            currency_preference: 首选货币 CNY/USD，默认CNY
+            
+        Returns:
+            dict: 包含用户信息和货币显示的字典
+        """
+        userInfo = self.getUserInfo(userid)
+        
+        # 添加货币转换功能
+        converter = get_currency_converter()
+        balance_cny = userInfo["balance"]  # 数据库中存储的是人民币
+        
+        # 获取双货币显示
+        currency_info = converter.get_dual_currency_display(balance_cny)
+        
+        # 根据首选货币设置主要显示
+        if currency_preference == "USD":
+            userInfo["balance_display"] = currency_info["usd"]["formatted"]
+            userInfo["balance_secondary"] = currency_info["cny"]["formatted"]
+            userInfo["balance_amount"] = currency_info["usd"]["amount"]
+        else:
+            userInfo["balance_display"] = currency_info["cny"]["formatted"]
+            userInfo["balance_secondary"] = currency_info["usd"]["formatted"]
+            userInfo["balance_amount"] = currency_info["cny"]["amount"]
+        
+        # 添加完整的货币信息
+        userInfo["currency_info"] = currency_info
+        userInfo["currency_preference"] = currency_preference
+        
         return userInfo
 
 # u=UserUtils()

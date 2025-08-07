@@ -20,11 +20,18 @@ logger = logging.getLogger('log')
 @orderCreationview_bp.route('/orderPreCreate')
 def orderPreCreate():     
     user_email=session['user_email']  
-    balance=0       
     u=UserUtils()
-    userInfo=u.getUserInfo(session['user_id'])
-    balance = userInfo['balance']
-    return render_template('orderPreCreate.html',user_email=user_email,balance=round(balance,2))
+    # 获取用户的货币偏好，默认显示人民币，但同时提供美元等值
+    currency_preference = request.args.get('currency', 'CNY')
+    userInfo = u.getUserInfoWithCurrency(session['user_id'], currency_preference)
+    
+    return render_template('orderPreCreate.html',
+                          user_email=user_email,
+                          balance=round(userInfo['balance'],2),
+                          balance_display=userInfo['balance_display'],
+                          balance_secondary=userInfo['balance_secondary'],
+                          currency_info=userInfo['currency_info'],
+                          currency_preference=currency_preference)
 
 @orderCreationview_bp.route('/payment_method')
 def payment_method():
@@ -352,7 +359,7 @@ def creem_webhook():
             trans_type=event_data.order.type
             channel="bankcard"
             description=f"AI Chat充值 - {amount}元"
-            mode=event_data.order.mode
+            mode=getattr(event_data.order, 'mode', 'production')
 
             customer_email = event_data.customer.email
             
@@ -501,7 +508,7 @@ def creem_webhook_prodTest():
             trans_type=event_data.order.type
             channel="bankcard"
             description=f"AI Chat充值 - {amount}元"
-            mode=event_data.order.mode
+            mode=getattr(event_data.order, 'mode', 'production')
 
             customer_email = event_data.customer.email
             

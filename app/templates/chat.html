@@ -20,6 +20,45 @@
     <!-- and it's easy to individually load additional languages -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- 货币显示样式 -->
+    <style>
+        .balance-main {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .balance-secondary {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .currency-toggle {
+            margin-top: 8px;
+        }
+        
+        .toggle-btn {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .toggle-btn:hover {
+            background: #e0e0e0;
+            border-color: #ccc;
+        }
+        
+        .toggle-btn:active {
+            background: #d0d0d0;
+        }
+    </style>
  
 </head>
 <body>
@@ -41,7 +80,21 @@
      
         <!-- 用户信息弹窗 -->
         <div id="popup">  
-            <div id="balance">余额: ¥{{balance}}</div>  
+            <div id="balance">
+                {% if balance_display %}
+                    <div class="balance-main">余额: {{ balance_display }}</div>
+                    {% if balance_secondary %}
+                        <div class="balance-secondary">(约{{ balance_secondary }})</div>
+                    {% endif %}
+                    <div class="currency-toggle">
+                        <button onclick="toggleCurrency()" class="toggle-btn">
+                            {% if currency_preference == 'CNY' %}切换到美元显示{% else %}切换到人民币显示{% endif %}
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="balance-main">余额: ¥{{balance}}</div>
+                {% endif %}
+            </div>  
             <div id="fund">
                 <form action="/payment_method" method="get">
                     <input type="hidden" name="user_email" value="{{ user_email }}">
@@ -94,6 +147,19 @@
   
         let historyField = document.getElementById('history');
         sendRequestByEnter('prompt','keydown')
+        
+        // 货币切换功能
+        function toggleCurrency() {
+            const currentCurrency = new URLSearchParams(window.location.search).get('currency') || 'CNY';
+            const newCurrency = currentCurrency === 'CNY' ? 'USD' : 'CNY';
+            
+            // 构建新的URL
+            const url = new URL(window.location);
+            url.searchParams.set('currency', newCurrency);
+            
+            // 重新加载页面
+            window.location.href = url.toString();
+        }
         
         // 添加调试信息
         console.log('聊天页面已加载，流式输出功能已启用');
