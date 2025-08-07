@@ -133,10 +133,11 @@ def handle_bankcard_payment(amount):
         # 获取用户邮箱
         user_email = session.get('user_email', '')
         
-        # 设置成功和取消URL
-        success_url = url_for('orderCreation.payment_success', _external=True)
-        # success_url = "http://localhost:5000/payment_success"
-        cancel_url = url_for('orderCreation.payment_method', _external=True)
+        # 设置成功和取消URL（必须是完整的外链地址）
+        from ..config import app_config
+        base_url = app_config.BASE_URL.rstrip('/')
+        success_url = f"{base_url}/payment_success"
+        cancel_url = f"{base_url}/payment_method"
         
         # 调用Creem支付服务
         creem_pay = current_app.creem_pay

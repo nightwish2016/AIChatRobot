@@ -6,7 +6,7 @@ eval "$(pyenv virtualenv-init -)"
 
 pyenv shell myenv3.12  # 或用 source activate
 
-git pull
+
 pkill -f gunicorn
 sleep 2
 

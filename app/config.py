@@ -85,6 +85,10 @@ class AppConfig:
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
     FLASK_ENV = os.getenv('FLASK_ENV', 'development')
     
+    # 应用URL配置（用于生成外链）
+    BASE_URL = os.getenv('BASE_URL', 'http://localhost:5000')
+    DOMAIN = os.getenv('DOMAIN', 'localhost:5000')
+    
     # Redis配置
     REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
     REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
