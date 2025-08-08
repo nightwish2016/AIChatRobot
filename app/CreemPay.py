@@ -1,8 +1,9 @@
 import requests
 import json
 import logging
+import redis
 from datetime import datetime
-from .config import creem_config
+from .config import creem_config, app_config
 
 logger = logging.getLogger('log')
 
@@ -20,10 +21,89 @@ class CreemPay:
             "Content-Type": "application/json"
         }
         
+        # 初始化Redis缓存
+        try:
+            self.redis_client = redis.StrictRedis(
+                host=app_config.REDIS_HOST,
+                port=app_config.REDIS_PORT,
+                db=app_config.REDIS_DB,
+                decode_responses=True  # 自动解码返回的字符串
+            )
+            # 测试Redis连接
+            self.redis_client.ping()
+            self.cache_enabled = True
+            logger.info("[INFO] Redis缓存已启用")
+        except Exception as e:
+            self.cache_enabled = False
+            logger.warning(f"[WARNING] Redis连接失败，产品缓存功能禁用: {str(e)}")
+        
         # 记录当前使用的环境
         env_info = creem_config.get_environment_info()
         logger.info(f"[INFO] Creem环境配置: {env_info['environment'].upper()}")
         logger.info(f"[INFO] API基础URL: {self.base_url}")
+    
+    def get_cache_key(self, amount):
+        """生成缓存键"""
+        env = creem_config.environment
+        return f"creem:product:{env}:{amount}"
+    
+    def get_cached_product_id(self, amount):
+        """从缓存获取产品ID"""
+        if not self.cache_enabled:
+            return None
+        
+        try:
+            cache_key = self.get_cache_key(amount)
+            product_id = self.redis_client.get(cache_key)
+            if product_id:
+                logger.info(f"[CACHE HIT] 从缓存获取产品ID: {product_id} (金额: {amount})")
+                return product_id
+            else:
+                logger.info(f"[CACHE MISS] 缓存中未找到金额 {amount} 对应的产品ID")
+                return None
+        except Exception as e:
+            logger.error(f"[CACHE ERROR] 获取缓存失败: {str(e)}")
+            return None
+    
+    def cache_product_id(self, amount, product_id, expire_time=7200):
+        """缓存产品ID，默认缓存2小时"""
+        if not self.cache_enabled:
+            return False
+        
+        try:
+            cache_key = self.get_cache_key(amount)
+            self.redis_client.setex(cache_key, expire_time, product_id)
+            logger.info(f"[CACHE SET] 缓存产品ID: {product_id} (金额: {amount}, 过期时间: {expire_time}秒)")
+            return True
+        except Exception as e:
+            logger.error(f"[CACHE ERROR] 设置缓存失败: {str(e)}")
+            return False
+    
+    def clear_product_cache(self, amount=None):
+        """清除产品缓存"""
+        if not self.cache_enabled:
+            return False
+        
+        try:
+            if amount:
+                # 清除特定金额的缓存
+                cache_key = self.get_cache_key(amount)
+                result = self.redis_client.delete(cache_key)
+                logger.info(f"[CACHE CLEAR] 清除金额 {amount} 的缓存，结果: {result}")
+                return result > 0
+            else:
+                # 清除所有产品缓存
+                env = creem_config.environment
+                pattern = f"creem:product:{env}:*"
+                keys = self.redis_client.keys(pattern)
+                if keys:
+                    result = self.redis_client.delete(*keys)
+                    logger.info(f"[CACHE CLEAR] 清除所有产品缓存，共清除 {result} 个键")
+                    return result > 0
+                return True
+        except Exception as e:
+            logger.error(f"[CACHE ERROR] 清除缓存失败: {str(e)}")
+            return False
     
     def search_products(self, amount=None):
         """搜索产品列表"""
@@ -134,45 +214,141 @@ class CreemPay:
             return {"success": False, "error": str(e)}
     
     def process_bankcard_payment(self, amount, user_email, success_url=None, cancel_url=None):
-        """处理银行卡支付流程"""
+        """处理银行卡支付流程（优化版本 - 使用缓存）"""
         try:
-            # 1. 搜索是否有相同金额的产品
-            search_result = self.search_products(amount)
-            if not search_result["success"]:
-                return search_result
+            start_time = datetime.now()
+            logger.info(f"[PAYMENT START] 开始处理银行卡支付，金额: {amount}")
             
-            products = search_result["products"]
-            product_id = None
+            # 1. 首先尝试从缓存获取产品ID
+            product_id = self.get_cached_product_id(amount)
             
-            # 2. 如果没有找到相同金额的产品，创建一个新的
-            if not products:
-                logger.info(f"没有找到金额为{amount}的产品，创建新产品")
-                product_name = f"充值{amount}元"
-                create_result = self.create_product(product_name, amount)
-                if not create_result["success"]:
-                    return create_result
-                product_id = create_result["product"]["id"]
+            if product_id:
+                # 缓存命中，直接使用缓存的产品ID
+                logger.info(f"[CACHE OPTIMIZATION] 使用缓存产品ID，跳过API搜索: {product_id}")
             else:
-                # 使用第一个找到的产品
-                product_id = products[0]["id"]
-                logger.info(f"找到现有产品: {product_id}")
+                # 缓存未命中，需要搜索或创建产品
+                logger.info(f"[CACHE MISS] 缓存未命中，开始搜索/创建产品")
+                
+                # 2. 搜索是否有相同金额的产品
+                search_result = self.search_products(amount)
+                if not search_result["success"]:
+                    return search_result
+                
+                products = search_result["products"]
+                
+                # 3. 如果没有找到相同金额的产品，创建一个新的
+                if not products:
+                    logger.info(f"没有找到金额为{amount}的产品，创建新产品")
+                    product_name = f"充值{amount}元"
+                    create_result = self.create_product(product_name, amount)
+                    if not create_result["success"]:
+                        return create_result
+                    product_id = create_result["product"]["id"]
+                    logger.info(f"新产品创建成功: {product_id}")
+                else:
+                    # 使用第一个找到的产品
+                    product_id = products[0]["id"]
+                    logger.info(f"找到现有产品: {product_id}")
+                
+                # 4. 将产品ID缓存起来
+                self.cache_product_id(amount, product_id)
             
-            # 3. 创建checkout（传入用户邮箱）
+            # 5. 创建checkout（传入用户邮箱）
             checkout_result = self.create_checkout(product_id, user_email, success_url, cancel_url)
             if not checkout_result["success"]:
                 return checkout_result
             
             checkout = checkout_result["checkout"]
-            checkout_url = checkout.get("checkout_url")  
+            checkout_url = checkout.get("checkout_url")
             
-            logger.info(f"银行卡支付流程完成,checkout URL: {checkout_url}")
+            # 记录总执行时间
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            logger.info(f"[PAYMENT COMPLETE] 银行卡支付流程完成，总耗时: {duration:.2f}秒")
+            logger.info(f"[PAYMENT COMPLETE] Checkout URL: {checkout_url}")
+            
             return {
                 "success": True,
                 "checkout_url": checkout_url,
                 "checkout_id": checkout.get("id"),
-                "product_id": product_id
+                "product_id": product_id,
+                "cache_hit": self.get_cached_product_id(amount) is not None,
+                "duration": duration
             }
             
         except Exception as e:
             logger.error(f"银行卡支付流程异常: {str(e)}")
-            return {"success": False, "error": str(e)} 
+            return {"success": False, "error": str(e)}
+    
+    def preload_common_products(self, amounts=None):
+        """预加载常用金额的产品到缓存"""
+        if amounts is None:
+            amounts = [10, 20, 50, 100, 200, 500]  # 默认常用金额
+        
+        logger.info(f"[PRELOAD] 开始预加载产品，金额列表: {amounts}")
+        results = {}
+        
+        for amount in amounts:
+            try:
+                # 检查缓存是否已存在
+                cached_id = self.get_cached_product_id(amount)
+                if cached_id:
+                    logger.info(f"[PRELOAD] 金额 {amount} 已在缓存中: {cached_id}")
+                    results[amount] = {"status": "cached", "product_id": cached_id}
+                    continue
+                
+                # 搜索现有产品
+                search_result = self.search_products(amount)
+                if search_result["success"] and search_result["products"]:
+                    product_id = search_result["products"][0]["id"]
+                    self.cache_product_id(amount, product_id)
+                    logger.info(f"[PRELOAD] 找到并缓存现有产品，金额: {amount}, ID: {product_id}")
+                    results[amount] = {"status": "found_and_cached", "product_id": product_id}
+                else:
+                    # 创建新产品
+                    product_name = f"充值{amount}元"
+                    create_result = self.create_product(product_name, amount)
+                    if create_result["success"]:
+                        product_id = create_result["product"]["id"]
+                        self.cache_product_id(amount, product_id)
+                        logger.info(f"[PRELOAD] 创建并缓存新产品，金额: {amount}, ID: {product_id}")
+                        results[amount] = {"status": "created_and_cached", "product_id": product_id}
+                    else:
+                        logger.error(f"[PRELOAD] 创建产品失败，金额: {amount}, 错误: {create_result.get('error')}")
+                        results[amount] = {"status": "failed", "error": create_result.get("error")}
+                        
+            except Exception as e:
+                logger.error(f"[PRELOAD] 处理金额 {amount} 时发生异常: {str(e)}")
+                results[amount] = {"status": "error", "error": str(e)}
+        
+        logger.info(f"[PRELOAD] 预加载完成，结果: {results}")
+        return results
+    
+    def get_cache_stats(self):
+        """获取缓存统计信息"""
+        if not self.cache_enabled:
+            return {"cache_enabled": False, "message": "缓存未启用"}
+        
+        try:
+            env = creem_config.environment
+            pattern = f"creem:product:{env}:*"
+            keys = self.redis_client.keys(pattern)
+            
+            cache_info = {"cache_enabled": True, "total_cached": len(keys), "cached_amounts": []}
+            
+            for key in keys:
+                # 从键中提取金额
+                amount = key.split(":")[-1]
+                product_id = self.redis_client.get(key)
+                ttl = self.redis_client.ttl(key)
+                cache_info["cached_amounts"].append({
+                    "amount": amount,
+                    "product_id": product_id,
+                    "ttl": ttl
+                })
+            
+            return cache_info
+            
+        except Exception as e:
+            logger.error(f"[CACHE STATS] 获取缓存统计失败: {str(e)}")
+            return {"cache_enabled": True, "error": str(e)} 

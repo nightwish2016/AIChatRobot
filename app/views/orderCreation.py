@@ -159,6 +159,12 @@ def handle_bankcard_payment(amount):
             checkout_url = result["checkout_url"]
             checkout_id = result["checkout_id"]
             product_id = result["product_id"]
+            cache_hit = result.get("cache_hit", False)
+            duration = result.get("duration", 0)
+            
+            # 记录性能信息
+            cache_status = "缓存命中" if cache_hit else "缓存未命中"
+            logger.info(f"银行卡支付性能统计 - {cache_status}, 耗时: {duration:.2f}秒, 产品ID: {product_id}")
             
             # 记录支付信息到数据库
            # u = payUtils()
@@ -219,8 +225,14 @@ def handle_alipay_payment(amount):
 @orderCreationview_bp.route('/alipay_nofity', methods=['POST'])
 def alipay_nofity():
     data = request.form.to_dict()
-    logger.info("notify******")
-    logger.info(data)
+    logger.info("=== 支付宝回调开始 ===")
+    logger.info(f"收到支付宝回调数据: {data}")
+    
+    # 记录关键信息
+    out_trade_no = data.get('out_trade_no', 'UNKNOWN')
+    trade_status = data.get('trade_status', 'UNKNOWN')
+    total_amount = data.get('total_amount', 'UNKNOWN')
+    logger.info(f"订单号: {out_trade_no}, 状态: {trade_status}, 金额: {total_amount}")
     ali_face_pay=current_app.ali_face_pay
     result={}
     if ali_face_pay.verify_params_sign(data):
@@ -252,7 +264,11 @@ def alipay_nofity():
                 trans["pay_success"]=True
                 trans["detail"]= json.dumps(result)
                 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
-                redis_client.set(f'fundTrans:{out_trade_no}',  json.dumps(trans),ex=600)   
+                redis_client.set(f'fundTrans:{out_trade_no}',  json.dumps(trans),ex=600)
+                
+                logger.info(f"支付成功！已保存到Redis: fundTrans:{out_trade_no}")
+                logger.info(f"保存的数据: {json.dumps(trans)}")
+                
                 result={"Message": "Notification send successfully",}
                 statusCode= 200
              
@@ -266,21 +282,22 @@ def alipay_nofity():
 
 @orderCreationview_bp.route('/wait_pay/<out_trade_no>', methods=['GET'])
 def wait_pay(out_trade_no):
-    # out_trade_no = request.args['out_trade_no']
-    # # 这里请求在支付成功之前都会阻塞
-    # locks[out_trade_no].acquire()
-    # # acquired!
-    # locks[out_trade_no].release()
-    # del locks[out_trade_no]
-    # return Response()
-    redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
-    result_fundtrans=(redis_client.get(f'fundTrans:{out_trade_no}')    )
+    logger.info(f"等待支付轮询 - 订单号: {out_trade_no}")
     
-    payment_status=False
-    if result_fundtrans!=None:
-        result=json.loads(result_fundtrans)
-        payment_status=result['pay_success']
-        details=json.loads(result['detail'])
+    redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
+    result_fundtrans = redis_client.get(f'fundTrans:{out_trade_no}')
+    
+    logger.info(f"Redis查询结果: {result_fundtrans}")
+    
+    payment_status = False
+    if result_fundtrans != None:
+        result = json.loads(result_fundtrans)
+        payment_status = result['pay_success']
+        details = json.loads(result['detail'])
+        logger.info(f"支付状态: {payment_status}, 详情: {details}")
+    else:
+        logger.info(f"Redis中未找到订单 {out_trade_no} 的支付信息")
+    
     if payment_status:
                 
             # update barcode,add fundTrans
@@ -301,6 +318,7 @@ def wait_pay(out_trade_no):
                 redis_client.delete(f'useid:{userId}')  
               
   
+    logger.info(f"返回支付状态: {payment_status}")
     return jsonify({
         'pay_success': payment_status  # 假设status可以是 "success", "pending", "failed"
     })

@@ -34,11 +34,21 @@
             border: 3px solid #667eea;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
             display: none;
+            user-select: none; /* 防止长按选择 */
+            -webkit-tap-highlight-color: transparent; /* 移除移动端点击高亮 */
         }
 
         #loggedInIcon:hover {
             transform: scale(1.1);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 移动端特定样式 */
+        @media (hover: none) and (pointer: coarse) {
+            #loggedInIcon:active {
+                transform: scale(0.95);
+                transition: transform 0.1s ease;
+            }
         }
 
         /* 小窗口的样式 */
@@ -141,6 +151,9 @@
                 width: 220px;
                 right: -10px;
                 padding: 15px;
+                /* 移动端弹窗改进 */
+                touch-action: manipulation;
+                user-select: none;
             }
             
             #balance {
@@ -151,6 +164,20 @@
             #fund button, #logoutButton {
                 padding: 10px 16px;
                 font-size: 14px;
+                touch-action: manipulation;
+            }
+        }
+
+        /* 移动端特定的弹窗样式 */
+        @media (hover: none) and (pointer: coarse) {
+            #popup {
+                /* 在触摸设备上提供更大的点击区域 */
+                min-height: 44px; /* iOS 推荐的最小触摸目标 */
+            }
+            
+            #popup button {
+                min-height: 44px;
+                touch-action: manipulation;
             }
         }
 

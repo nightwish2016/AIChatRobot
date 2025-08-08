@@ -189,6 +189,8 @@
                     </div>
                 </div>
                 
+                <!-- 银行卡支付暂时禁用 - 等待creem账号官方approve后重新启用 -->
+                <!--
                 <div class="payment-option" data-method="bankcard">
                     <div class="payment-header">
                         <div>
@@ -203,9 +205,13 @@
                         推荐海外用户使用
                     </div>
                 </div>
+                -->
             </div>
             
-            <button type="submit" id="submitBtn" disabled>下一步</button>
+            <button type="submit" id="submitBtn" disabled style="display: none;">下一步</button>
+            <div id="loadingMessage" style="display: none; text-align: center; color: #667eea; font-weight: 500; margin-top: 20px;">
+                正在跳转到金额选择页面...
+            </div>
         </form>
     </div>
 
@@ -220,17 +226,12 @@
             const isMainlandChina = detectUserLocation();
             
             const alipayRecommendation = document.getElementById('alipayRecommendation');
-            const bankcardRecommendation = document.getElementById('bankcardRecommendation');
+            // 银行卡推荐元素已被禁用，跳过相关逻辑
+            // const bankcardRecommendation = document.getElementById('bankcardRecommendation');
             
-            if (isMainlandChina) {
-                alipayRecommendation.textContent = '✅ 推荐：中国大陆用户建议使用支付宝支付';
-                alipayRecommendation.classList.add('recommended');
-                bankcardRecommendation.textContent = '💡 提示：海外用户建议使用银行卡支付';
-            } else {
-                bankcardRecommendation.textContent = '✅ 推荐：海外用户建议使用银行卡支付';
-                bankcardRecommendation.classList.add('recommended');
-                alipayRecommendation.textContent = '💡 提示：中国大陆用户建议使用支付宝支付';
-            }
+            // 由于只有支付宝选项，直接设置推荐文案
+            alipayRecommendation.textContent = '✅ 推荐：使用支付宝支付，安全便捷';
+            alipayRecommendation.classList.add('recommended');
         }
 
         const paymentOptions = document.querySelectorAll('.payment-option');
@@ -245,34 +246,29 @@
                 const method = this.dataset.method;
                 paymentMethodInput.value = method;
                 
-                submitBtn.disabled = false;
-                submitBtn.textContent = `选择${method === 'alipay' ? '支付宝' : '银行卡'}支付`;
+                // 显示加载消息
+                const loadingMessage = document.getElementById('loadingMessage');
+                loadingMessage.style.display = 'block';
+                
+                // 延迟一点时间显示跳转效果，然后自动提交表单
+                setTimeout(() => {
+                    document.getElementById('paymentForm').submit();
+                }, 500);
             });
         });
 
         window.addEventListener('load', setRecommendations);
         
-        // 表单提交验证
+        // 表单提交处理（自动提交时的处理）
         document.getElementById('paymentForm').addEventListener('submit', function(event) {
             const selectedMethod = paymentMethodInput.value;
             
+            // 确保已选择支付方式
             if (!selectedMethod) {
                 alert('请选择支付方式');
                 event.preventDefault();
                 return;
             }
-            
-            // 禁用按钮并显示跳转中
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = '跳转中...';
-            submitBtn.style.cursor = 'not-allowed';
-            
-            // 防止重复提交
-            event.preventDefault();
-            
-            // 提交表单
-            this.submit();
         });
     </script>
 </body>
