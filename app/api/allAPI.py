@@ -155,6 +155,7 @@ def generate():
     prompt = data['prompt']    
     model = data['model']
     conversationid=data['conversationid']
+    attachment_ids = data.get('attachment_ids', [])  # 新增：附件ID列表
     # prompt = 'hi' 
     # prompt = 'sqlite如何使用事务' 
     # model = "gpt-4-turbo-2024-04-09" 
@@ -197,7 +198,51 @@ def generate():
             sessionDict["conversationid"]=conversationid
             sessionDict[f'conversation:{conversationid}']=conversation_history
         
-       
+        # 新增：处理附件内容
+        attachment_content = ""
+        logger.info(f"接收到的附件IDs: {attachment_ids}")
+        logger.info(f"Session中是否有附件: {'attachments' in session}")
+        
+        if attachment_ids:
+            logger.info(f"尝试处理附件IDs: {attachment_ids}")
+            
+            attachment_texts = []
+            for attachment_id in attachment_ids:
+                logger.info(f"正在从Redis查找附件ID: {attachment_id}")
+                
+                # 从Redis获取附件信息
+                attachment_key = f"attachment:{session['user_id']}:{attachment_id}"
+                attachment_data_str = redis_client.get(attachment_key)
+                
+                if attachment_data_str:
+                    try:
+                        attachment_data = json.loads(attachment_data_str)
+                        attachment_info = attachment_data['info']
+                        full_content = attachment_data.get('full_content', '')
+                        
+                        logger.info(f"从Redis找到附件: {attachment_info['original_filename']}, 内容长度: {len(full_content)}")
+                        
+                        if full_content:
+                            attachment_text = f"\n--- 附件: {attachment_info['original_filename']} ({attachment_info['file_type']}) ---\n"
+                            attachment_text += full_content
+                            attachment_text += f"\n--- 附件结束 ---\n"
+                            attachment_texts.append(attachment_text)
+                        else:
+                            logger.warning(f"附件 {attachment_info['original_filename']} 没有文本内容")
+                    except json.JSONDecodeError as e:
+                        logger.error(f"解析附件数据失败: {e}")
+                else:
+                    logger.warning(f"Redis中未找到附件ID: {attachment_id}")
+            
+            if attachment_texts:
+                attachment_content = "\n".join(attachment_texts)
+                # 将附件内容添加到用户prompt前面
+                prompt = f"我上传了以下附件，请分析其内容并回答我的问题:\n{attachment_content}\n\n用户问题: {prompt}"
+                logger.info(f"成功处理附件，最终prompt长度: {len(prompt)}")
+            else:
+                logger.warning("没有找到有效的附件内容")
+        else:
+            logger.info("没有提供附件IDs")
        
         # sessionid=""
         # if conversation_history==None or len(conversation_history)==0:

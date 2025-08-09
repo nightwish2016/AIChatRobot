@@ -58,8 +58,117 @@
         .toggle-btn:active {
             background: #d0d0d0;
         }
+        
+        /* 附件上传相关样式 */
+        .attachment-section {
+            margin-bottom: 10px;
+        }
+        
+        .attachment-upload {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+        
+        .file-input-label {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #555;
+            transition: all 0.2s ease;
+        }
+        
+        .file-input-label:hover {
+            background: #e0e0e0;
+            border-color: #ccc;
+        }
+        
+        .upload-status {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .attachments-list {
+            max-height: 120px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 8px;
+            background: #fafafa;
+        }
+        
+        .attachment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            background: white;
+            border-radius: 3px;
+            border: 1px solid #eee;
+        }
+        
+        .attachment-info {
+            flex: 1;
+            font-size: 12px;
+        }
+        
+        .attachment-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .attachment-meta {
+            color: #666;
+            font-size: 11px;
+        }
+        
+        .attachment-actions {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .attachment-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        
+        .attachment-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .attachment-btn.delete {
+            color: #e74c3c;
+        }
+        
+        .no-attachments {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            padding: 20px;
+        }
     </style>
- 
+
 </head>
 <body>
     <div class="chat-container">
@@ -113,6 +222,24 @@
         
         <!-- 输入区域 -->
         <div class="input-section">
+            <!-- 新增：附件上传区域 -->
+            <div class="attachment-section">
+                <div class="attachment-upload">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="attachment-file" accept=".txt,.md,.py,.js,.html,.css,.json,.xml,.csv,.pdf,.docx,.doc,.xlsx,.xls,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.zip,.rar,.7z" />
+                        <label for="attachment-file" class="file-input-label">📎 选择附件（自动上传）</label>
+                    </div>
+                    <span id="upload-status" class="upload-status"></span>
+                </div>
+                
+                <!-- 附件列表 -->
+                <div id="attachments-container" style="display: none;">
+                    <div class="attachments-list" id="attachments-list">
+                        <div class="no-attachments">暂无附件</div>
+                    </div>
+                </div>
+            </div>
+            
             <textarea id="prompt" rows="4" placeholder="请输入您的消息..."></textarea>
             <div class="controls">
                 <div class="select-group">
@@ -161,9 +288,220 @@
             window.location.href = url.toString();
         }
         
+        // 新增：附件管理功能
+        let attachments = {}; // 存储当前会话的附件
+        
+        // 文件选择事件 - 自动上传
+        document.getElementById('attachment-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const statusSpan = document.getElementById('upload-status');
+            
+            if (file) {
+                // 检查文件大小 (50MB)
+                if (file.size > 50 * 1024 * 1024) {
+                    statusSpan.textContent = '文件太大，最大支持50MB';
+                    statusSpan.style.color = '#e74c3c';
+                    return;
+                }
+                
+                // 自动开始上传
+                uploadAttachment();
+            } else {
+                statusSpan.textContent = '';
+            }
+        });
+        
+        // 上传附件
+        async function uploadAttachment() {
+            const fileInput = document.getElementById('attachment-file');
+            const file = fileInput.files[0];
+            const statusSpan = document.getElementById('upload-status');
+            
+            if (!file) {
+                statusSpan.textContent = '请先选择文件';
+                statusSpan.style.color = '#e74c3c';
+                return;
+            }
+            
+            // 检查登录状态
+            const loginData = await checkLoginStatus();
+            if (!loginData.logged_in) {
+                statusSpan.textContent = '请先登录';
+                statusSpan.style.color = '#e74c3c';
+                return;
+            }
+            
+            statusSpan.textContent = '上传中...';
+            statusSpan.style.color = '#2196F3';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch('/api/v1/upload_attachment', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 添加到附件列表
+                    attachments[result.attachment.id] = result.attachment;
+                    updateAttachmentsList();
+                    
+                    console.log('附件上传成功:', result.attachment);
+                    console.log('当前附件列表:', attachments);
+                    
+                    statusSpan.textContent = '上传成功!';
+                    statusSpan.style.color = '#4CAF50';
+                    
+                    // 清空文件选择
+                    fileInput.value = '';
+                    
+                    setTimeout(() => {
+                        statusSpan.textContent = '';
+                    }, 3000);
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('上传失败:', error);
+                statusSpan.textContent = `上传失败: ${error.message}`;
+                statusSpan.style.color = '#e74c3c';
+                
+                // 清空文件选择，以便用户重新选择
+                setTimeout(() => {
+                    fileInput.value = '';
+                    statusSpan.textContent = '';
+                }, 3000);
+            }
+        }
+        
+        // 更新附件列表显示
+        function updateAttachmentsList() {
+            const container = document.getElementById('attachments-container');
+            const list = document.getElementById('attachments-list');
+            
+            if (Object.keys(attachments).length === 0) {
+                container.style.display = 'none';
+                list.innerHTML = '<div class="no-attachments">暂无附件</div>';
+            } else {
+                container.style.display = 'block';
+                list.innerHTML = '';
+                
+                Object.values(attachments).forEach(attachment => {
+                    const item = document.createElement('div');
+                    item.className = 'attachment-item';
+                    
+                    item.innerHTML = `
+                        <div class="attachment-info">
+                            <div class="attachment-name">${attachment.filename}</div>
+                            <div class="attachment-meta">
+                                ${attachment.file_type} · ${formatFileSize(attachment.file_size)}
+                                ${attachment.has_text_content ? ' · 包含文本内容' : ''}
+                            </div>
+                        </div>
+                        <div class="attachment-actions">
+                            <button class="attachment-btn" onclick="viewAttachment('${attachment.id}')" title="查看详情">👁</button>
+                            <button class="attachment-btn delete" onclick="deleteAttachment('${attachment.id}')" title="删除">🗑</button>
+                        </div>
+                    `;
+                    
+                    list.appendChild(item);
+                });
+            }
+        }
+        
+        // 查看附件详情
+        async function viewAttachment(attachmentId) {
+            try {
+                const response = await fetch(`/api/v1/get_attachment/${attachmentId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const attachment = result.attachment;
+                    let message = `文件名: ${attachment.filename}\n`;
+                    message += `文件类型: ${attachment.file_type}\n`;
+                    message += `文件大小: ${formatFileSize(attachment.file_size)}\n`;
+                    message += `上传时间: ${new Date(attachment.upload_time).toLocaleString()}\n`;
+                    
+                    if (attachment.has_text_content) {
+                        message += `\n内容预览:\n${attachment.content_preview}`;
+                        if (attachment.content_preview.length >= 500) {
+                            message += '...';
+                        }
+                    }
+                    
+                    alert(message);
+                } else {
+                    alert(`获取附件信息失败: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('获取附件信息失败:', error);
+                alert('获取附件信息失败');
+            }
+        }
+        
+        // 删除附件
+        async function deleteAttachment(attachmentId) {
+            if (!confirm('确定要删除这个附件吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/v1/delete_attachment/${attachmentId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    delete attachments[attachmentId];
+                    updateAttachmentsList();
+                } else {
+                    alert(`删除失败: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('删除附件失败:', error);
+                alert('删除附件失败');
+            }
+        }
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 获取当前选中的附件ID列表
+        function getSelectedAttachmentIds() {
+            const ids = Object.keys(attachments);
+            console.log('获取附件IDs:', ids);
+            console.log('附件详情:', attachments);
+            return ids;
+        }
+        
+        // 从服务器获取用户的附件列表
+        async function loadUserAttachments() {
+            try {
+                // 这里可以添加一个API来获取用户的附件列表
+                // 目前前端维护的attachments对象已经足够
+                console.log('当前附件列表已加载');
+            } catch (error) {
+                console.error('加载附件列表失败:', error);
+            }
+        }
+        
         // 添加调试信息
         console.log('聊天页面已加载，流式输出功能已启用');
         console.log('当前会话ID:', document.getElementById("guidDisplay").textContent);
+        console.log('附件上传功能已启用');
     </script>
 </body>
 </html>

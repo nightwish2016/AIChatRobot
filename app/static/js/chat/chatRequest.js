@@ -53,11 +53,19 @@ async function ChatReuqest(prompt,model,guid) {
     // let s="ChagGPT: "
     let s=" "
     const url = '/chatStream';
+    
+    // 获取当前选中的附件ID列表
+    const attachmentIds = typeof getSelectedAttachmentIds === 'function' ? getSelectedAttachmentIds() : [];
+    console.log('发送聊天请求，附件IDs:', attachmentIds);
+    
     const data = {
         model: model,  // 这里设置 model 参数
-        prompt: prompt  ,
-        conversationid:guid   // 这里设置 prompt 参数
+        prompt: prompt,
+        conversationid: guid,   // 这里设置 prompt 参数
+        attachment_ids: attachmentIds  // 新增：附件ID列表
     };
+    
+    console.log('发送的数据:', data);
     fetch(url,{
         method: 'POST',           // 指定使用 POST 方法
         headers: {

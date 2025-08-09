@@ -131,6 +131,7 @@ def create_app():
     from .api.allAPI import allAPI_bp 
     from .OpenAI import openai_bp
     from .GeminiAPI import genminiai_bp
+    from .api.attachment_api import attachment_bp
     
     
 
@@ -145,6 +146,7 @@ def create_app():
     app.register_blueprint(allAPI_bp)
     app.register_blueprint(openai_bp)
     app.register_blueprint(genminiai_bp)
+    app.register_blueprint(attachment_bp)
 
     # app.register_blueprint(auth_bp, url_prefix='/auth') userview_bp
 
