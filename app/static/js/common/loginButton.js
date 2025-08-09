@@ -1,22 +1,20 @@
 // 检查登录状态
-async   function checkLoginStatus() {
-    // return sessionStorage.getItem('loggedIn') === 'true';
-                    try {
-            const response = await fetch('/check-login');
-            const data = await response.json();           
+async function checkLoginStatus() {
+    try {
+        const response = await fetch('/check-login');
+        const data = await response.json();           
 
-            if (data.logged_in==true) {
-                console.log("user already login");
-               
-            } else {
-                console.log("user doesn't login");
-              
-            }
-            return data;
-        } catch (error) {
-            console.error("Error checking login status:", error);
-            return data;  // 在出错时返回 false 或其他适当的错误处理
+        if (data.logged_in == true) {
+            console.log("user already login");
+        } else {
+            console.log("user doesn't login");
         }
+        return data;
+    } catch (error) {
+        console.error("Error checking login status:", error);
+        // 在出错时返回默认的未登录状态
+        return { logged_in: false };
+    }
 }
 
 
@@ -27,18 +25,27 @@ async  function                                                                 
     let loginStatus=dataCheckLogin.logged_in
     // console.log(dataCheckLogin)  
     // console.log(loginStatus)
-     if (loginStatus) {
-        document.getElementById('loginButton').style.display = 'none';
-        document.getElementById('loggedInIcon').style.display = 'block';
-        document.getElementById('balance').style.display = 'block';
-       
+             if (loginStatus) {
+        const loginButton = document.getElementById('loginButton');
+        const loggedInIcon = document.getElementById('loggedInIcon');
+        const balance = document.getElementById('balance');
+        const welcome = document.getElementById('welcome') || document.getElementById('welcome-text');
+        
+        if (loginButton) loginButton.style.display = 'none';
+        if (loggedInIcon) loggedInIcon.style.display = 'inline-block';
+        if (balance) balance.style.display = 'block';
+        if (welcome) welcome.style.display = 'inline';
        
     } else {
-      
-        document.getElementById('loginButton').style.display = 'block';
-         document.getElementById('loggedInIcon').style.display = 'none';
-         document.getElementById('welcome').style.display = 'none';
-         document.getElementById('balance').style.display = 'none';
+        const loginButton = document.getElementById('loginButton');
+        const loggedInIcon = document.getElementById('loggedInIcon');
+        const balance = document.getElementById('balance');
+        const welcome = document.getElementById('welcome') || document.getElementById('welcome-text');
+        
+        if (loginButton) loginButton.style.display = 'inline-block';
+        if (loggedInIcon) loggedInIcon.style.display = 'none';
+        if (welcome) welcome.style.display = 'none';
+        if (balance) balance.style.display = 'none';
     }
 }
 
@@ -89,7 +96,9 @@ function loginButtonDisplayProcess() {
 
         if (loginButton) {
             loginButton.onclick = function() {
-                displayLoginStatus();
+                console.log('登录按钮被点击');
+                // 跳转到登录页面
+                window.location.href = '/loginPage?origin=' + encodeURIComponent(window.location.pathname);
             };
         }
 

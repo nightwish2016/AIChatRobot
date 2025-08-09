@@ -22,13 +22,43 @@ def ip_key_func():
 def check_login():
     is_logged_in = 'user_email' in session
     logger.info('logged_in:'+str(is_logged_in))
-    # return jsonify({'logged_in': is_logged_in})    
+    
     statusCode=200
     if is_logged_in==False:
         statusCode=401
+    
     result = {           
-                    "logged_in": is_logged_in
-            }     
+        "logged_in": is_logged_in
+    }
+    
+    # 如果已登录，添加用户名信息
+    if is_logged_in:
+        user_email = session.get('user_email', '')
+        user_id = session.get('user_id')
+        
+        # 从数据库查询真正的用户名
+        if user_id:
+            try:
+                from app.DB.SqlLiteUtil import SqlLiteUtil
+                db = SqlLiteUtil()
+                query = "SELECT user FROM user WHERE id = ?"
+                rows = db.query(query, (user_id,))
+                db.cursor.close()
+                db.conn.close()
+                
+                if rows and len(rows) > 0:
+                    user_name = rows[0]['user']
+                else:
+                    user_name = 'User'  # 默认用户名
+            except Exception as e:
+                logger.error(f'查询用户名失败: {e}')
+                user_name = 'User'  # 出错时使用默认用户名
+        else:
+            user_name = 'User'  # 没有用户ID时使用默认用户名
+            
+        result["user_name"] = user_name
+        result["user_email"] = user_email
+     
     response = make_response(jsonify(result), statusCode)
     return response
 

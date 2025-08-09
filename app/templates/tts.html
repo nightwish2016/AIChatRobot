@@ -45,23 +45,42 @@
         .toggle-btn:active {
             background: #d0d0d0;
         }
-        .tts-content {
+        /* TTS 主要内容区域 - 模仿 #history 的样式 */
+        .tts-main {
             flex: 1;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+            background: white;
+            padding: 20px;
+            overflow-y: auto;
+            border-radius: 8px;
+            margin-bottom: 0;
+        }
+
+        .tts-form-container {
+            max-width: 100%;
+            margin: 0 auto;
         }
 
         .tts-form {
             width: 100%;
-            max-width: 600px;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            margin: 0;
+        }
+
+        /* TTS 操作区域 - 模仿 input-section 样式 */
+        .tts-controls {
+            padding: 20px;
             background: white;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-top: 1px solid #e5e7eb;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .generate-controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
         }
 
         h1 {
@@ -69,6 +88,7 @@
             margin-bottom: 30px;
             font-size: 2.2rem;
             font-weight: 600;
+            text-align: center;
         }
 
         .input-group {
@@ -86,15 +106,16 @@
 
         textarea {
             width: 100%;
-            padding: 15px;
+            padding: 20px;
             border: 2px solid #e1e5e9;
             border-radius: 12px;
             font-size: 16px;
             font-family: inherit;
             resize: vertical;
-            min-height: 120px;
+            min-height: 200px;
             transition: border-color 0.3s ease;
             background: white;
+            line-height: 1.6;
         }
 
         textarea:focus {
@@ -124,51 +145,68 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 15px 30px;
+            padding: 14px 36px;
             border-radius: 12px;
-            font-size: 16px;
-            font-weight: 500;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+            max-width: 200px;
             margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+        }
+
+        .generate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
         }
 
         .generate-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .generate-btn:hover::before {
+            left: 100%;
         }
 
         .generate-btn:active {
             transform: translateY(0);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
         }
 
         .generate-btn:disabled {
-            opacity: 0.6;
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            color: #94a3b8;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .audio-controls {
-            margin-top: 30px;
-            padding: 25px;
-            border-top: 1px solid #e1e5e9;
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
             display: none;
             flex-direction: column;
-            gap: 20px;
+            gap: 10px;
             align-items: center;
-            background: rgba(102, 126, 234, 0.05);
-            border-radius: 12px;
+            background: #f8f9fa;
             position: relative;
             z-index: 10;
         }
 
-        .audio-controls h3 {
-            color: #333;
-            margin: 0;
-            font-size: 1.3rem;
-        }
+
 
         audio {
             width: 100%;
@@ -177,21 +215,38 @@
         }
 
         .download-btn {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 8px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
         }
 
         .download-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .download-btn:hover::before {
+            left: 100%;
         }
 
         .message {
@@ -237,17 +292,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* 确保TTS页面不受displayWindow.css影响 */
-        .chat-container .tts-content {
-            flex: 1;
-            overflow-y: auto;
-            position: relative;
-        }
-
-        .chat-container .tts-form {
-            position: relative;
-            z-index: 5;
-        }
+        /* TTS页面布局 */
 
         /* 确保音频控件可见 */
         .audio-controls {
@@ -259,12 +304,12 @@
 
         /* 响应式设计 */
         @media (max-width: 768px) {
-            .tts-content {
-                padding: 20px;
+            .tts-main {
+                padding: 15px;
             }
 
-            .tts-form {
-                padding: 20px;
+            .tts-controls {
+                padding: 15px;
             }
 
             h1 {
@@ -278,7 +323,8 @@
             }
 
             .generate-btn {
-                padding: 12px 20px;
+                padding: 12px 30px;
+                max-width: 180px;
             }
         }
 
@@ -298,52 +344,116 @@
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="upMenu">
-            <div id="welcome"><p>欢迎, {{ user_name }}!</p></div>
-            <div class="otherUrl">
-                <a href="/chat">AI 聊天</a>
-                <a href="/image">AI 图像生成</a>
-                <a href="/subtitle">字幕提取</a>
+    <div class="app-layout">
+        <!-- 左侧菜单栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Toolify AI</h2>
             </div>
-            <div class="login-section">
-                <form id="login" action="/loginPage?origin=/tts" method="post">
-                    <button id="loginButton">登录</button>
-                    <img id="loggedInIcon" src="{{ url_for('static', filename='image/login.png') }}" alt="已登录"/> 
-                </form>
-            </div>   
+            
+            <nav class="sidebar-nav">
+                <a href="/chat" class="nav-item">
+                    <div class="icon">💬</div>
+                    <div class="text">AI 对话</div>
+                </a>
+                <a href="/image" class="nav-item">
+                    <div class="icon">🎨</div>
+                    <div class="text">AI 图像生成</div>
+                </a>
+                <a href="/tts" class="nav-item active">
+                    <div class="icon">🔊</div>
+                    <div class="text">文字转语音</div>
+                </a>
+                <a href="/subtitle" class="nav-item">
+                    <div class="icon">📝</div>
+                    <div class="text">字幕提取</div>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <!-- 登录按钮（未登录时显示） -->
+                <button class="nav-item" id="sidebar-login-btn" style="display: none;" onclick="handleSidebarLogin()">
+                    <div class="icon">🔑</div>
+                    <div class="text">登录</div>
+                </button>
+                
+                <!-- 用户名（已登录时显示） -->
+                <div class="nav-item" id="sidebar-username" style="display: none;" onclick="toggleUserPopup()">
+                    <div class="icon">👤</div>
+                    <div class="text" id="sidebar-username-text">{{ user_name }}</div>
+                </div>
+            </div>
         </div>
         
-        <!-- 用户信息弹窗 -->
-        <div id="popup">    
-            <div id="balance">
-                {% if balance_display %}
-                    <div class="balance-main">余额: {{ balance_display }}</div>
-                    {% if balance_secondary %}
-                        <div class="balance-secondary">(约{{ balance_secondary }})</div>
-                    {% endif %}
-                    <div class="currency-toggle">
-                        <button onclick="toggleCurrency()" class="toggle-btn">
-                            {% if currency_preference == 'CNY' %}切换到美元显示{% else %}切换到人民币显示{% endif %}
+        <!-- 移动端遮罩层 -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 顶部栏 -->
+            <div class="top-bar">
+                <div class="left-section">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        ☰
+                    </button>
+                    <span>Toolify AI</span>
+                </div>
+                
+                <div class="right-section">
+                    <!-- 右上角登录/注册按钮（未登录时显示） -->
+                    <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
+                        <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
+                                style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            登录
+                        </button>
+                        <button onclick="window.location.href='/register'" 
+                                style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            注册
                         </button>
                     </div>
-                {% else %}
-                    <div class="balance-main">余额: ¥{{balance}}</div>
-                {% endif %}
-            </div>  
-            <div id="fund">
-                <form action="/orderPreCreate">
-                    <button id="fund" type="submit" onclick="window.location.href='/payment_method?user_email={{ user_email }}&amount=10'; return false;">充值</button>
-                </form>
-            </div>        
-            <form action="/logout">
-                <button id="logoutButton" type="submit">登出</button>
-            </form>
-        </div>
+                    
+                    <!-- 用户信息（已登录时显示） -->
+                    <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
+                        <span id="topbar-welcome-text">欢迎, {{ user_name }}!</span>
+                        <img src="{{ url_for('static', filename='image/login.png') }}" alt="已登录" style="width: 24px; height: 24px;"/> 
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 内容区域 -->
+            <div class="chat-area">
+                <div class="chat-container">
+                    <!-- 用户信息弹窗 -->
+                    <div id="popup">    
+                        <div id="balance">
+                            {% if balance_display %}
+                                <div class="balance-main">余额: {{ balance_display }}</div>
+                                {% if balance_secondary %}
+                                    <div class="balance-secondary">(约{{ balance_secondary }})</div>
+                                {% endif %}
+                                <div class="currency-toggle">
+                                    <button onclick="toggleCurrency()" class="toggle-btn">
+                                        {% if currency_preference == 'CNY' %}切换到美元显示{% else %}切换到人民币显示{% endif %}
+                                    </button>
+                                </div>
+                            {% else %}
+                                <div class="balance-main">余额: ¥{{balance}}</div>
+                            {% endif %}
+                        </div>  
+                        <div id="fund">
+                            <form action="/orderPreCreate">
+                                <button id="fund" type="submit" onclick="window.location.href='/payment_method?user_email={{ user_email }}&amount=10'; return false;">充值</button>
+                            </form>
+                        </div>        
+                        <form action="/logout">
+                            <button id="logoutButton" type="submit">登出</button>
+                        </form>
+                    </div>
 
-        <!-- TTS 内容区域 -->
-        <div class="tts-content">
-            <div class="tts-form">
+                    <!-- TTS 主要内容区域 -->
+                    <div id="tts-main" class="tts-main">
+                        <div class="tts-form-container">
+                            <div class="tts-form">
                 <h1>文本转语音</h1>
                 
                 <div class="input-group">
@@ -360,23 +470,29 @@
                     </select>
                 </div>
 
-                <button id="btn" class="generate-btn" onclick="generateAudio()">生成语音</button>
-                
-                <div id="loading">
-                    <span class="loading-spinner"></span>
-                    正在生成语音，请稍候...
                 </div>
-                
-                <div id="errorMessage" class="message error-message"></div>
-                <div id="successMessage" class="message success-message"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- TTS 操作区域 - 模仿 input-section -->
+                    <div class="tts-controls">
+                        <div id="loading">
+                            <span class="loading-spinner"></span>
+                            正在生成语音，请稍候...
+                        </div>
+                        
+                        <div id="errorMessage" class="message error-message"></div>
+                        <div id="successMessage" class="message success-message"></div>
 
-                <div class="audio-controls" id="audioControls">
-                    <h3>播放与下载</h3>
-                    <audio id="audioPlayer" controls></audio>
-                    <button class="download-btn" onclick="downloadAudio()">下载音频</button>
-                </div>
-            </div>
-        </div>
+                        <div class="audio-controls" id="audioControls">
+                            <audio id="audioPlayer" controls></audio>
+                            <button class="download-btn" onclick="downloadAudio()">下载音频</button>
+                        </div>
+                        
+                        <div class="generate-controls">
+                            <button id="btn" class="generate-btn" onclick="generateAudio()">生成语音</button>
+                        </div>
+                    </div>
     </div>
 
     <script>
@@ -489,6 +605,105 @@
                 generateAudio();
             }
         });
+        
+        // 移动端侧边栏控制
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            sidebar.classList.toggle('open');
+            if (sidebar.classList.contains('open')) {
+                overlay.classList.add('show');
+            } else {
+                overlay.classList.remove('show');
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        }
+        
+        // 用户弹窗控制
+        function toggleUserPopup() {
+            const popup = document.getElementById('popup');
+            if (popup) {
+                popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+        
+        // 处理侧边栏登录按钮点击
+        function handleSidebarLogin() {
+            console.log('侧边栏登录按钮被点击');
+            window.location.href = '/loginPage?origin=' + encodeURIComponent(window.location.pathname);
+        }
+        
+        // 初始化新布局的登录功能
+        async function initializeNewLayoutLogin() {
+            console.log('初始化新布局登录功能');
+            
+            try {
+                // 首先检查登录状态
+                const loginData = await checkLoginStatus();
+                const isLoggedIn = loginData.logged_in;
+                
+                // 侧边栏元素
+                const sidebarLoginBtn = document.getElementById('sidebar-login-btn');
+                const sidebarUsername = document.getElementById('sidebar-username');
+                const sidebarUsernameText = document.getElementById('sidebar-username-text');
+                
+                // 顶部栏元素
+                const topbarAuthButtons = document.getElementById('topbar-auth-buttons');
+                const topbarUserInfo = document.getElementById('topbar-user-info');
+                const topbarWelcomeText = document.getElementById('topbar-welcome-text');
+                
+                if (isLoggedIn) {
+                    console.log('用户已登录');
+                    
+                    // 隐藏侧边栏登录，显示用户名
+                    if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                    if (sidebarUsername) sidebarUsername.style.display = 'flex';
+                    
+                    // 隐藏顶部栏登录/注册按钮，显示用户信息
+                    if (topbarAuthButtons) topbarAuthButtons.style.display = 'none';
+                    if (topbarUserInfo) topbarUserInfo.style.display = 'flex';
+                    
+                    // 更新用户名显示
+                    if (loginData.user_name) {
+                        if (sidebarUsernameText) {
+                            sidebarUsernameText.textContent = loginData.user_name;
+                        }
+                        if (topbarWelcomeText) {
+                            topbarWelcomeText.textContent = `欢迎, ${loginData.user_name}!`;
+                        }
+                    }
+                } else {
+                    console.log('用户未登录');
+                    
+                    // 隐藏侧边栏登录和用户名
+                    if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                    if (sidebarUsername) sidebarUsername.style.display = 'none';
+                    
+                    // 显示顶部栏登录/注册按钮，隐藏用户信息
+                    if (topbarAuthButtons) topbarAuthButtons.style.display = 'flex';
+                    if (topbarUserInfo) topbarUserInfo.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('初始化登录状态失败:', error);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeNewLayoutLogin();
+        });
     </script>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

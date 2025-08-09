@@ -453,57 +453,91 @@
 
 </head>
 <body>
-    <div class="chat-container">
-        <div class="upMenu">
-            <div id="welcome"><p>欢迎, {{ user_name }}!</p></div>  
-            <div class="otherUrl">
-                <a href="/image">AI 图像生成</a>
-                <a href="/tts">文字转语音</a>
-                <a href="/subtitle">字幕提取</a>
+    <div class="app-layout">
+        <!-- 左侧菜单栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Toolify AI</h2>
             </div>
-            <div class="login-section">
-                <form id="login" action="/loginPage?origin=/chat" method="post">
-                    <button id="loginButton">登录</button>
-                    <img id="loggedInIcon" src="{{ url_for('static', filename='image/login.png') }}" alt="已登录"/> 
-                </form>
+            
+            <nav class="sidebar-nav">
+                <a href="/chat" class="nav-item active">
+                    <div class="icon">💬</div>
+                    <div class="text">AI 对话</div>
+                </a>
+                <a href="/image" class="nav-item">
+                    <div class="icon">🎨</div>
+                    <div class="text">AI 图像生成</div>
+                </a>
+                <a href="/tts" class="nav-item">
+                    <div class="icon">🔊</div>
+                    <div class="text">文字转语音</div>
+                </a>
+                <a href="/subtitle" class="nav-item">
+                    <div class="icon">📝</div>
+                    <div class="text">字幕提取</div>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <!-- 登录按钮（未登录时显示） -->
+                <button class="nav-item" id="sidebar-login-btn" style="display: none;" onclick="handleSidebarLogin()">
+                    <div class="icon">🔑</div>
+                    <div class="text">登录</div>
+                </button>
+                
+                <!-- 用户名（已登录时显示） -->
+                <div class="nav-item" id="sidebar-username" style="display: none;" onclick="toggleUserPopup()">
+                    <div class="icon">👤</div>
+                    <div class="text" id="sidebar-username-text">{{ user_name }}</div>
+                </div>
             </div>
         </div>
-     
-        <!-- 用户信息弹窗 -->
-        <div id="popup">  
-            <div id="balance">
-                {% if balance_display %}
-                    <div class="balance-main">余额: {{ balance_display }}</div>
-                    {% if balance_secondary %}
-                        <div class="balance-secondary">(约{{ balance_secondary }})</div>
-                    {% endif %}
-                    <div class="currency-toggle">
-                        <button onclick="toggleCurrency()" class="toggle-btn">
-                            {% if currency_preference == 'CNY' %}切换到美元显示{% else %}切换到人民币显示{% endif %}
+        
+        <!-- 移动端遮罩层 -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 顶部栏 -->
+            <div class="top-bar">
+                <div class="left-section">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        ☰
+                    </button>
+                    <span>Toolify AI</span>
+                </div>
+                
+                <div class="right-section">
+                    <!-- 右上角登录/注册按钮（未登录时显示） -->
+                    <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
+                        <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
+                                style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            登录
+                        </button>
+                        <button onclick="window.location.href='/register'" 
+                                style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            注册
                         </button>
                     </div>
-                {% else %}
-                    <div class="balance-main">余额: ¥{{balance}}</div>
-                {% endif %}
-            </div>  
-            <div id="fund">
-                <form action="/payment_method" method="get">
-                    <input type="hidden" name="user_email" value="{{ user_email }}">
-                    <input type="hidden" name="amount" value="10">
-                    <button id="fund" type="submit">充值</button>
-                </form>
-            </div>  
-            <form action="/logout">
-                <button id="logoutButton" type="submit">登出</button>
-            </form>
-        </div>
-
-        <!-- 聊天历史记录 -->
-        <div id="history"></div>
-        <div id="guidDisplay" style="display: none;"></div>      
-        
-        <!-- 输入区域 -->
-        <div class="input-section">
+                    
+                    <!-- 用户信息（已登录时显示） -->
+                    <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
+                        <span id="topbar-welcome-text">欢迎, {{ user_name }}!</span>
+                        <img src="{{ url_for('static', filename='image/login.png') }}" alt="已登录" style="width: 24px; height: 24px;"/> 
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 聊天区域 -->
+            <div class="chat-area">
+                <div class="chat-container">
+                    <!-- 聊天历史记录 -->
+                    <div id="history"></div>
+                    <div id="guidDisplay" style="display: none;"></div>      
+                    
+                    <!-- 输入区域 -->
+                    <div class="input-section">
             <!-- 隐藏的原附件上传区域 -->
             <div class="attachment-section">
                 <div class="attachment-upload">
@@ -571,11 +605,70 @@
                     </select>
                 </div>
                 <button onclick="sendToChatGPT()">发送</button>
+                    </div>
+                </div>
             </div>
+        </div>
+        
+        <!-- 用户信息弹窗 -->
+        <div id="popup">  
+            <div id="balance">
+                {% if balance_display %}
+                    <div class="balance-main">余额: {{ balance_display }}</div>
+                    {% if balance_secondary %}
+                        <div class="balance-secondary">(约{{ balance_secondary }})</div>
+                    {% endif %}
+                    <div class="currency-toggle">
+                        <button onclick="toggleCurrency()" class="toggle-btn">
+                            {% if currency_preference == 'CNY' %}切换到美元显示{% else %}切换到人民币显示{% endif %}
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="balance-main">余额: ¥{{balance}}</div>
+                {% endif %}
+            </div>  
+            <div id="fund">
+                <form action="/payment_method" method="get">
+                    <input type="hidden" name="user_email" value="{{ user_email }}">
+                    <input type="hidden" name="amount" value="10">
+                    <button id="fund" type="submit">充值</button>
+                </form>
+            </div>  
+            <form action="/logout">
+                <button id="logoutButton" type="submit">登出</button>
+            </form>
         </div>
     </div>
 		
-    <script>    
+    <script>
+        // 移动端侧边栏控制
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            sidebar.classList.toggle('open');
+            if (sidebar.classList.contains('open')) {
+                overlay.classList.add('show');
+            } else {
+                overlay.classList.remove('show');
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        }
+        
+        // 用户弹窗控制
+        function toggleUserPopup() {
+            const popup = document.getElementById('popup');
+            if (popup) {
+                popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+            }
+        }    
         function generateGUID() {
             function s4() {
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -590,7 +683,70 @@
         }
         showGUID()
         
-        loginButtonDisplayProcess()
+        // 处理侧边栏登录按钮点击
+        function handleSidebarLogin() {
+            console.log('侧边栏登录按钮被点击');
+            window.location.href = '/loginPage?origin=' + encodeURIComponent(window.location.pathname);
+        }
+        
+        // 初始化新布局的登录功能
+        async function initializeNewLayoutLogin() {
+            console.log('初始化新布局登录功能');
+            
+            // 首先检查登录状态
+            const loginData = await checkLoginStatus();
+            const isLoggedIn = loginData.logged_in;
+            
+            // 侧边栏元素
+            const sidebarLoginBtn = document.getElementById('sidebar-login-btn');
+            const sidebarUsername = document.getElementById('sidebar-username');
+            const sidebarUsernameText = document.getElementById('sidebar-username-text');
+            
+            // 顶部栏元素
+            const topbarAuthButtons = document.getElementById('topbar-auth-buttons');
+            const topbarUserInfo = document.getElementById('topbar-user-info');
+            const topbarWelcomeText = document.getElementById('topbar-welcome-text');
+            
+            if (isLoggedIn) {
+                console.log('用户已登录');
+                
+                // 隐藏侧边栏登录，显示用户名
+                if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                if (sidebarUsername) sidebarUsername.style.display = 'flex';
+                
+                // 隐藏顶部栏登录/注册按钮，显示用户信息
+                if (topbarAuthButtons) topbarAuthButtons.style.display = 'none';
+                if (topbarUserInfo) topbarUserInfo.style.display = 'flex';
+                
+                // 更新用户名显示
+                if (loginData.user_name) {
+                    if (sidebarUsernameText) {
+                        sidebarUsernameText.textContent = loginData.user_name;
+                    }
+                    if (topbarWelcomeText) {
+                        topbarWelcomeText.textContent = `欢迎, ${loginData.user_name}!`;
+                    }
+                }
+            } else {
+                console.log('用户未登录');
+                
+                // 隐藏侧边栏登录和用户名
+                if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                if (sidebarUsername) sidebarUsername.style.display = 'none';
+                
+                // 显示顶部栏登录/注册按钮，隐藏用户信息
+                if (topbarAuthButtons) topbarAuthButtons.style.display = 'flex';
+                if (topbarUserInfo) topbarUserInfo.style.display = 'none';
+            }
+        }
+        
+        // 调用新的初始化函数
+        initializeNewLayoutLogin();
+        
+        // 保持原有的处理器用于向后兼容
+        if (typeof loginButtonDisplayProcess === 'function') {
+            loginButtonDisplayProcess();
+        }
   
         let historyField = document.getElementById('history');
         sendRequestByEnter('prompt','keydown')

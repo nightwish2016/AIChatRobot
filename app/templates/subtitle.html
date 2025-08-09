@@ -46,24 +46,43 @@
             background: #d0d0d0;
         }
         /* 字幕提取页面特定样式 */
-        .subtitle-content {
+        /* 字幕提取主要内容区域 - 模仿 #history 的样式 */
+        .subtitle-main {
             flex: 1;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+            background: white;
+            padding: 20px;
             overflow-y: auto;
+            border-radius: 8px;
+            margin-bottom: 0;
+        }
+
+        .subtitle-form-container {
+            max-width: 100%;
+            margin: 0 auto;
         }
 
         .subtitle-form {
             width: 100%;
-            max-width: 900px;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            margin: 0;
+        }
+
+        /* 字幕提取操作区域 - 模仿 input-section 样式 */
+        .subtitle-controls {
+            padding: 20px;
             background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-top: 1px solid #e5e7eb;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .process-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
         }
 
         .subtitle-form h1 {
@@ -86,6 +105,8 @@
         .upload-area:hover {
             border-color: #667eea;
             background-color: #f8f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
         }
 
         .upload-area .upload-icon {
@@ -109,24 +130,45 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 15px 40px;
-            border-radius: 25px;
-            font-size: 1.2em;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
             cursor: pointer;
             margin: 10px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
         }
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn:disabled {
-            opacity: 0.6;
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            color: #94a3b8;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .status {
@@ -209,21 +251,38 @@
         }
 
         .download-btn {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 8px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
         }
 
         .download-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .download-btn:hover::before {
+            left: 100%;
         }
 
         .file-input {
@@ -232,8 +291,12 @@
 
         /* 响应式设计 */
         @media (max-width: 768px) {
-            .subtitle-content {
-                padding: 20px;
+            .subtitle-main {
+                padding: 15px;
+            }
+
+            .subtitle-controls {
+                padding: 15px;
             }
 
             .subtitle-form {
@@ -255,8 +318,8 @@
             }
 
             .btn {
-                padding: 12px 25px;
-                font-size: 1.1em;
+                padding: 10px 20px;
+                font-size: 14px;
             }
         }
 
@@ -281,22 +344,85 @@
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="upMenu">
-            <div id="welcome"><p>欢迎, {{ user_name }}!</p></div>
-            <div class="otherUrl">
-                <a href="/chat">AI 聊天</a>
-                <a href="/image">AI 图像生成</a>
-                <a href="/tts">文字转语音</a>
+    <div class="app-layout">
+        <!-- 左侧菜单栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Toolify AI</h2>
             </div>
-            <div class="login-section">
-                <form id="login" action="/loginPage?origin=/subtitle" method="post">
-                    <button id="loginButton">登录</button>
-                    <img id="loggedInIcon" src="{{ url_for('static', filename='image/login.png') }}" alt="已登录"/> 
-                </form>
+            
+            <nav class="sidebar-nav">
+                <a href="/chat" class="nav-item">
+                    <div class="icon">💬</div>
+                    <div class="text">AI 对话</div>
+                </a>
+                <a href="/image" class="nav-item">
+                    <div class="icon">🎨</div>
+                    <div class="text">AI 图像生成</div>
+                </a>
+                <a href="/tts" class="nav-item">
+                    <div class="icon">🔊</div>
+                    <div class="text">文字转语音</div>
+                </a>
+                <a href="/subtitle" class="nav-item active">
+                    <div class="icon">📝</div>
+                    <div class="text">字幕提取</div>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <!-- 登录按钮（未登录时显示） -->
+                <button class="nav-item" id="sidebar-login-btn" style="display: none;" onclick="handleSidebarLogin()">
+                    <div class="icon">🔑</div>
+                    <div class="text">登录</div>
+                </button>
+                
+                <!-- 用户名（已登录时显示） -->
+                <div class="nav-item" id="sidebar-username" style="display: none;" onclick="toggleUserPopup()">
+                    <div class="icon">👤</div>
+                    <div class="text" id="sidebar-username-text">{{ user_name }}</div>
+                </div>
             </div>
         </div>
         
+        <!-- 移动端遮罩层 -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 顶部栏 -->
+            <div class="top-bar">
+                <div class="left-section">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        ☰
+                    </button>
+                    <span>Toolify AI</span>
+                </div>
+                
+                <div class="right-section">
+                    <!-- 右上角登录/注册按钮（未登录时显示） -->
+                    <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
+                        <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
+                                style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            登录
+                        </button>
+                        <button onclick="window.location.href='/register'" 
+                                style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            注册
+                        </button>
+                    </div>
+                    
+                    <!-- 用户信息（已登录时显示） -->
+                    <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
+                        <span id="topbar-welcome-text">欢迎, {{ user_name }}!</span>
+                        <img src="{{ url_for('static', filename='image/login.png') }}" alt="已登录" style="width: 24px; height: 24px;"/> 
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 内容区域 -->
+            <div class="chat-area">
+                <div class="chat-container">
         <!-- 用户信息弹窗 -->
         <div id="popup">    
             <div id="balance">
@@ -324,8 +450,9 @@
             </form>
         </div>
 
-        <!-- 字幕提取内容区域 -->
-        <div class="subtitle-content">
+                            <!-- 字幕提取主要内容区域 -->
+                    <div class="subtitle-main">
+                        <div class="subtitle-form-container">
             <div class="subtitle-form">
                 <h1>🎬 视频字幕提取工具</h1>
                 <p style="color: #666; margin-bottom: 30px;">支持提取内嵌字幕、外挂字幕，或使用AI语音识别生成字幕</p>
@@ -340,13 +467,10 @@
                 
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📁</div>
-                    <div class="upload-text">点击或拖拽文件到此处上传</div>
+                    <div class="upload-text">点击此处选择文件上传</div>
                     <div class="upload-hint">支持格式: MP4, AVI, MOV, MKV, WMV, FLV, WEBM, MP3, WAV, M4A, AAC, OGG, FLAC</div>
-                    <button class="btn" id="selectFileBtn">选择文件</button>
                     <input type="file" id="fileInput" class="file-input" accept=".mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.mp3,.wav,.m4a,.aac,.ogg,.flac">
                 </div>
-
-                <div class="status" id="status"></div>
 
                 <div class="options" id="options">
                     <div class="option-group">
@@ -366,14 +490,23 @@
                             <option value="auto">自动检测</option>
                         </select>
                     </div>
-                    <button class="btn" id="processBtn" onclick="processSubtitle()">开始处理</button>
                 </div>
+                            </div>
+                        </div>
+                </div>
+                    
+                    <!-- 字幕提取操作区域 - 模仿 input-section -->
+                    <div class="subtitle-controls">
+                        <div class="status" id="status"></div>
 
                 <div class="result" id="result">
                     <h3>🎉 处理完成!</h3>
                     <div id="resultInfo"></div>
                     <button class="btn download-btn" id="downloadBtn" onclick="downloadSubtitle()">下载字幕文件</button>
                 </div>
+                        
+                        <div class="process-controls">
+                            <button class="btn" id="processBtn" onclick="processSubtitle()">开始处理</button>
             </div>
         </div>
     </div>
@@ -383,6 +516,7 @@
         let downloadUrl = null;
         let useR2Storage = true;
         let downloadFilename = null;
+        let isProcessingClick = false; // 防止重复点击
 
         // 货币切换功能
         function toggleCurrency() {
@@ -399,37 +533,81 @@
 
         // 初始化页面
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded事件触发');
+            
             // 使用标准的登录按钮处理流程
-            loginButtonDisplayProcess();
+            try {
+                loginButtonDisplayProcess();
+            } catch (error) {
+                console.error('loginButtonDisplayProcess错误:', error);
+            }
             
             // 检查登录状态并显示相应内容
-            checkLoginAndUpdateUI();
+            try {
+                checkLoginAndUpdateUI();
+            } catch (error) {
+                console.error('checkLoginAndUpdateUI错误:', error);
+            }
             
             // 设置登录状态监听
-            setupLoginStateListener();
+            try {
+                setupLoginStateListener();
+            } catch (error) {
+                console.error('setupLoginStateListener错误:', error);
+            }
             
             // 绑定文件选择事件
-            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', handleFileSelect);
+            }
             
-            // 绑定上传区域点击事件（排除按钮区域）
-            document.getElementById('uploadArea').addEventListener('click', function(e) {
-                // 如果点击的是按钮，不触发文件选择
-                if (e.target.id === 'selectFileBtn') {
-                    return;
-                }
-                // 重置状态后再选择文件
-                resetStateForNewFile();
-                document.getElementById('fileInput').click();
-            });
+
             
-            // 绑定选择文件按钮点击事件
-            document.getElementById('selectFileBtn').addEventListener('click', function(e) {
-                e.stopPropagation(); // 阻止事件冒泡
-                // 重置状态后再选择文件
-                resetStateForNewFile();
-                document.getElementById('fileInput').click();
-            });
+            // 上传区域点击处理
+            const uploadArea = document.getElementById('uploadArea');
+            if (uploadArea) {
+                uploadArea.addEventListener('click', async function(e) {
+                    // 防止重复点击
+                    if (isProcessingClick) {
+                        console.log('正在处理点击事件，忽略重复点击');
+                        return;
+                    }
+                    
+                    isProcessingClick = true;
+                    console.log('上传区域被点击');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    try {
+                        const loginData = await checkLoginStatus();
+                        if (!loginData.logged_in) {
+                            showStatus('未登录，请登录', 'error');
+                        } else {
+                            console.log('用户已登录，打开文件选择');
+                            resetStateForNewFile();
+                            if (fileInput) {
+                                fileInput.click();
+                                console.log('已触发文件选择');
+                            } else {
+                                console.error('fileInput元素不存在');
+                                showStatus('文件选择器初始化失败', 'error');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('处理点击事件时出错:', error);
+                        showStatus('系统错误', 'error');
+                    } finally {
+                        // 500ms后重置点击状态
+                        setTimeout(() => {
+                            isProcessingClick = false;
+                        }, 500);
+                    }
+                });
+            }
         });
+
+
 
         // 检查登录状态并更新UI
         async function checkLoginAndUpdateUI() {
@@ -439,40 +617,53 @@
             const loginPrompt = document.getElementById('loginPrompt');
             const uploadArea = document.getElementById('uploadArea');
             
-            if (loginStatus == false) {
-                // 未登录：显示登录提示，隐藏上传区域
-                loginPrompt.style.display = 'block';
-                uploadArea.style.display = 'none';
-            } else {
-                // 已登录：隐藏登录提示，显示上传区域
-                loginPrompt.style.display = 'none';
-                uploadArea.style.display = 'block';
-            }
+            // 始终隐藏登录提示区域，始终显示上传区域
+            // 未登录用户可以看到界面，但点击文件选择时会显示登录提示
+            loginPrompt.style.display = 'none';
+            uploadArea.style.display = 'block';
         }
 
         // 页面加载时初始化登录状态
         window.addEventListener('load', function() {
-            displayLoginStatus(); // 确保登录状态和余额显示正确
-            checkLoginAndUpdateUI(); // 更新字幕提取页面UI
+            try {
+                if (typeof displayLoginStatus === 'function') {
+                    displayLoginStatus(); // 确保登录状态和余额显示正确
+                } else {
+                    console.warn('displayLoginStatus函数未定义');
+                }
+                checkLoginAndUpdateUI(); // 更新字幕提取页面UI
+            } catch (error) {
+                console.error('页面加载初始化错误:', error);
+            }
         });
 
         // 监听登录状态变化
         function setupLoginStateListener() {
-            // 监听登录按钮点击
-            document.getElementById('loginButton').addEventListener('click', function() {
-                setTimeout(function() {
-                    displayLoginStatus(); // 使用标准的登录状态显示函数
-                    checkLoginAndUpdateUI(); // 更新字幕提取页面UI
-                }, 1000); // 延迟检查，等待登录完成
-            });
+            // 安全地监听登录按钮点击
+            const loginButton = document.getElementById('loginButton');
+            if (loginButton) {
+                loginButton.addEventListener('click', function() {
+                    setTimeout(function() {
+                        if (typeof displayLoginStatus === 'function') {
+                            displayLoginStatus(); // 使用标准的登录状态显示函数
+                        }
+                        checkLoginAndUpdateUI(); // 更新字幕提取页面UI
+                    }, 1000); // 延迟检查，等待登录完成
+                });
+            }
             
-            // 监听登出按钮点击
-            document.getElementById('logoutButton').addEventListener('click', function() {
-                setTimeout(function() {
-                    displayLoginStatus(); // 使用标准的登录状态显示函数
-                    checkLoginAndUpdateUI(); // 更新字幕提取页面UI
-                }, 500); // 延迟检查，等待登出完成
-            });
+            // 安全地监听登出按钮点击
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', function() {
+                    setTimeout(function() {
+                        if (typeof displayLoginStatus === 'function') {
+                            displayLoginStatus(); // 使用标准的登录状态显示函数
+                        }
+                        checkLoginAndUpdateUI(); // 更新字幕提取页面UI
+                    }, 500); // 延迟检查，等待登出完成
+                });
+            }
         }
 
         function handleFileSelect(e) {
@@ -696,7 +887,104 @@
             showStatus('请选择新的视频文件', 'info');
         }
 
-
+        // 移动端侧边栏控制
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            sidebar.classList.toggle('open');
+            if (sidebar.classList.contains('open')) {
+                overlay.classList.add('show');
+            } else {
+                overlay.classList.remove('show');
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        }
+        
+        // 用户弹窗控制
+        function toggleUserPopup() {
+            const popup = document.getElementById('popup');
+            if (popup) {
+                popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+        
+        // 处理侧边栏登录按钮点击
+        function handleSidebarLogin() {
+            console.log('侧边栏登录按钮被点击');
+            window.location.href = '/loginPage?origin=' + encodeURIComponent(window.location.pathname);
+        }
+        
+        // 初始化新布局的登录功能
+        async function initializeNewLayoutLogin() {
+            console.log('初始化新布局登录功能');
+            
+            try {
+                // 首先检查登录状态
+                const loginData = await checkLoginStatus();
+                const isLoggedIn = loginData.logged_in;
+                
+                // 侧边栏元素
+                const sidebarLoginBtn = document.getElementById('sidebar-login-btn');
+                const sidebarUsername = document.getElementById('sidebar-username');
+                const sidebarUsernameText = document.getElementById('sidebar-username-text');
+                
+                // 顶部栏元素
+                const topbarAuthButtons = document.getElementById('topbar-auth-buttons');
+                const topbarUserInfo = document.getElementById('topbar-user-info');
+                const topbarWelcomeText = document.getElementById('topbar-welcome-text');
+                
+                if (isLoggedIn) {
+                    console.log('用户已登录');
+                    
+                    // 隐藏侧边栏登录，显示用户名
+                    if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                    if (sidebarUsername) sidebarUsername.style.display = 'flex';
+                    
+                    // 隐藏顶部栏登录/注册按钮，显示用户信息
+                    if (topbarAuthButtons) topbarAuthButtons.style.display = 'none';
+                    if (topbarUserInfo) topbarUserInfo.style.display = 'flex';
+                    
+                    // 更新用户名显示
+                    if (loginData.user_name) {
+                        if (sidebarUsernameText) {
+                            sidebarUsernameText.textContent = loginData.user_name;
+                        }
+                        if (topbarWelcomeText) {
+                            topbarWelcomeText.textContent = `欢迎, ${loginData.user_name}!`;
+                        }
+                    }
+                } else {
+                    console.log('用户未登录');
+                    
+                    // 隐藏侧边栏登录和用户名
+                    if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                    if (sidebarUsername) sidebarUsername.style.display = 'none';
+                    
+                    // 显示顶部栏登录/注册按钮，隐藏用户信息
+                    if (topbarAuthButtons) topbarAuthButtons.style.display = 'flex';
+                    if (topbarUserInfo) topbarUserInfo.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('初始化登录状态失败:', error);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeNewLayoutLogin();
+        });
     </script>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 
