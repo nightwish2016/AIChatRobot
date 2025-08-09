@@ -59,16 +59,16 @@
             background: #d0d0d0;
         }
         
-        /* 附件上传相关样式 */
+        /* 附件上传相关样式 - 优化版 */
         .attachment-section {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         
         .attachment-upload {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 12px;
+            margin-bottom: 12px;
         }
         
         .file-input-wrapper {
@@ -83,89 +83,371 @@
         }
         
         .file-input-label {
-            background: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 8px 12px;
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 16px;
             cursor: pointer;
-            font-size: 12px;
-            color: #555;
-            transition: all 0.2s ease;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.25);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         
         .file-input-label:hover {
-            background: #e0e0e0;
-            border-color: #ccc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.35);
+            background: linear-gradient(135deg, #3367d6 0%, #2d9624 100%);
+        }
+        
+        .file-input-label:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.25);
         }
         
         .upload-status {
-            font-size: 12px;
+            font-size: 13px;
             color: #666;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        
+        .upload-status.success {
+            color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
+        }
+        
+        .upload-status.error {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+        
+        .upload-status.uploading {
+            color: #3498db;
+            background: rgba(52, 152, 219, 0.1);
         }
         
         .attachments-list {
-            max-height: 120px;
+            max-height: 130px;
             overflow-y: auto;
-            border: 1px solid #eee;
-            border-radius: 4px;
-            padding: 8px;
-            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            background: linear-gradient(145deg, #f8f9fa, #ffffff);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
         }
         
         .attachment-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 6px 8px;
-            margin-bottom: 4px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
             background: white;
-            border-radius: 3px;
-            border: 1px solid #eee;
+            border-radius: 6px;
+            border: 1px solid #e8e8e8;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .attachment-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            border-color: #4285f4;
+        }
+        
+        .attachment-item:last-child {
+            margin-bottom: 0;
         }
         
         .attachment-info {
             flex: 1;
-            font-size: 12px;
+            font-size: 13px;
         }
         
         .attachment-name {
-            font-weight: bold;
-            color: #333;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 2px;
         }
         
         .attachment-meta {
-            color: #666;
+            color: #7f8c8d;
             font-size: 11px;
         }
         
         .attachment-actions {
             display: flex;
-            gap: 4px;
+            gap: 6px;
         }
         
         .attachment-btn {
-            background: none;
+            background: rgba(0,0,0,0.05);
             border: none;
             color: #666;
             cursor: pointer;
-            font-size: 11px;
-            padding: 2px 4px;
-            border-radius: 2px;
+            font-size: 14px;
+            padding: 6px 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .attachment-btn:hover {
-            background: #f0f0f0;
+            background: rgba(0,0,0,0.1);
+            transform: scale(1.05);
         }
         
         .attachment-btn.delete {
             color: #e74c3c;
         }
         
+        .attachment-btn.delete:hover {
+            background: rgba(231, 76, 60, 0.1);
+            color: #c0392b;
+        }
+        
         .no-attachments {
             text-align: center;
-            color: #999;
+            color: #bdc3c7;
+            font-size: 13px;
+            padding: 25px 20px;
+            font-style: italic;
+        }
+        
+        /* 新增：ChatGPT风格的+按钮和弹出菜单 */
+        .input-container {
+            position: relative;
+            border: 1px solid #d1d5db;
+            border-radius: 24px;
+            background: white;
+            display: flex;
+            align-items: flex-end;
+            padding: 8px 12px 8px 8px;
+            gap: 8px;
+            transition: border-color 0.2s ease;
+            min-height: 48px;
+        }
+        
+        .input-container:focus-within {
+            border-color: #10a37f;
+            box-shadow: 0 0 0 2px rgba(16, 163, 127, 0.1);
+            outline: none;
+        }
+        
+        .input-container * {
+            outline: none;
+        }
+        
+        .plus-button {
+            width: 30px;
+            height: 30px;
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: #6b7280;
+            line-height: 1;
+        }
+        
+        .plus-button:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .plus-button:focus {
+            outline: none;
+            box-shadow: none;
+        }
+        
+        .plus-button.active {
+            background: #f3f4f6;
+            color: #374151;
+            transform: rotate(45deg);
+        }
+        
+        .dropdown-menu {
+            position: absolute;
+            bottom: 60px;
+            left: 8px;
+            background: white;
+            border: 1px solid #d9d9e3;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 8px;
+            min-width: 220px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px) scale(0.95);
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            width: 100%;
+            text-align: left;
+            background: none;
+            font-size: 14px;
+            color: #353740;
+            border-radius: 8px;
+            margin: 2px 0;
+        }
+        
+        .menu-item:hover {
+            background: #f7f7f8;
+            color: #202123;
+        }
+        
+        .menu-item .icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #8e8ea0;
+            flex-shrink: 0;
+        }
+        
+        .menu-item:hover .icon {
+            color: #565869;
+        }
+        
+        .menu-item .text {
+            flex: 1;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        
+        .menu-item .description {
+            font-size: 13px;
+            color: #8e8ea0;
+            margin-top: 2px;
+            font-weight: 400;
+            line-height: 1.3;
+        }
+        
+        .menu-item:hover .description {
+            color: #565869;
+        }
+        
+        .textarea-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #prompt {
+            width: 100%;
+            border: none;
+            outline: none;
+            resize: none;
+            background: transparent;
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 8px 0;
+            color: #353740;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 24px;
+            max-height: 200px;
+            overflow-y: hidden;
+            transition: height 0.1s ease;
+            box-shadow: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        #prompt:focus {
+            outline: none;
+            border: none;
+            box-shadow: none;
+        }
+        
+        #prompt::placeholder {
+            color: #8e8ea0;
+        }
+        
+        /* 隐藏原来的附件区域 */
+        .attachment-section {
+            display: none;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .input-container {
+                padding: 6px 10px 6px 6px;
+                gap: 6px;
+                min-height: 44px;
+            }
+            
+            .plus-button {
+                width: 28px;
+                height: 28px;
+                font-size: 22px;
+                font-weight: 700;
+            }
+            
+            #prompt {
+                font-size: 16px;
+                padding: 6px 0;
+                min-height: 22px;
+                max-height: 150px;
+            }
+            
+            .dropdown-menu {
+                min-width: 200px;
+                left: 6px;
+                bottom: 50px;
+            }
+            
+            .menu-item {
+                padding: 10px 12px;
+                font-size: 13px;
+                gap: 10px;
+            }
+            
+            .menu-item .icon {
+                width: 18px;
+                height: 18px;
+                font-size: 14px;
+            }
+            
+            .menu-item .description {
             font-size: 12px;
-            padding: 20px;
+            }
         }
     </style>
 
@@ -222,7 +504,7 @@
         
         <!-- 输入区域 -->
         <div class="input-section">
-            <!-- 新增：附件上传区域 -->
+            <!-- 隐藏的原附件上传区域 -->
             <div class="attachment-section">
                 <div class="attachment-upload">
                     <div class="file-input-wrapper">
@@ -240,7 +522,45 @@
                 </div>
             </div>
             
-            <textarea id="prompt" rows="4" placeholder="请输入您的消息..."></textarea>
+            <!-- 新的输入容器，包含+按钮 -->
+            <div class="input-container">
+                <!-- + 按钮 -->
+                <div class="plus-button" id="plus-button">+</div>
+                
+                <!-- 弹出菜单 -->
+                <div class="dropdown-menu" id="dropdown-menu">
+                    <button class="menu-item" onclick="openFileDialog()">
+                        <div class="icon">📎</div>
+                        <div>
+                            <div class="text">添加附件</div>
+                            <div class="description">上传文档、图片等文件</div>
+                        </div>
+                    </button>
+                    <button class="menu-item" onclick="showMoreOptions()">
+                        <div class="icon">📋</div>
+                        <div>
+                            <div class="text">粘贴内容</div>
+                            <div class="description">粘贴文本或图片</div>
+                        </div>
+                    </button>
+                </div>
+                
+                                <!-- 文本输入区域包装器 -->
+                <div class="textarea-wrapper">
+                    <textarea id="prompt" rows="1" placeholder="请输入您的消息..."></textarea>
+                </div>
+            </div>
+            
+            <!-- 显示当前附件状态 -->
+            <div id="upload-status-display" class="upload-status" style="margin-bottom: 5px; display: none;"></div>
+            
+            <!-- 附件列表显示区域 -->
+            <div id="current-attachments" style="display: none; margin-bottom: 8px;">
+                <div class="attachments-list" id="current-attachments-list">
+                    <div class="no-attachments">暂无附件</div>
+                </div>
+            </div>
+            
             <div class="controls">
                 <div class="select-group">
                     <label for="model-select">选择模型:</label>
@@ -288,19 +608,97 @@
             window.location.href = url.toString();
         }
         
+        // 新增：textarea自动高度调整功能
+        const textarea = document.getElementById('prompt');
+        
+        // 自动调整textarea高度
+        function autoResize(element) {
+            element.style.height = 'auto';
+            // 根据屏幕大小设置不同的最大高度
+            const maxHeight = window.innerWidth <= 768 ? 150 : 200;
+            const newHeight = Math.min(element.scrollHeight, maxHeight);
+            element.style.height = newHeight + 'px';
+        }
+        
+        // 监听输入事件
+        textarea.addEventListener('input', function() {
+            autoResize(this);
+        });
+        
+        // 监听键盘事件（处理删除等操作）
+        textarea.addEventListener('keydown', function() {
+            setTimeout(() => autoResize(this), 0);
+        });
+        
+        // 初始化高度
+        autoResize(textarea);
+        
+        // 新增：+按钮和弹出菜单功能
+        const plusButton = document.getElementById('plus-button');
+        const dropdownMenu = document.getElementById('dropdown-menu');
+        let isMenuOpen = false;
+        
+        // +按钮点击事件
+        plusButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleDropdownMenu();
+        });
+        
+        // 点击其他地方关闭菜单
+        document.addEventListener('click', function(e) {
+            if (!dropdownMenu.contains(e.target) && !plusButton.contains(e.target)) {
+                closeDropdownMenu();
+            }
+        });
+        
+        function toggleDropdownMenu() {
+            if (isMenuOpen) {
+                closeDropdownMenu();
+            } else {
+                openDropdownMenu();
+            }
+        }
+        
+        function openDropdownMenu() {
+            dropdownMenu.classList.add('show');
+            plusButton.classList.add('active');
+            isMenuOpen = true;
+        }
+        
+        function closeDropdownMenu() {
+            dropdownMenu.classList.remove('show');
+            plusButton.classList.remove('active');
+            isMenuOpen = false;
+        }
+        
+        // 打开文件选择对话框
+        function openFileDialog() {
+            document.getElementById('attachment-file').click();
+            closeDropdownMenu();
+        }
+        
+        // 显示更多选项（暂时只是提示）
+        function showMoreOptions() {
+            alert('此功能正在开发中...');
+            closeDropdownMenu();
+        }
+        
         // 新增：附件管理功能
         let attachments = {}; // 存储当前会话的附件
         
         // 文件选择事件 - 自动上传
         document.getElementById('attachment-file').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            const statusSpan = document.getElementById('upload-status');
+            const statusSpan = document.getElementById('upload-status-display');
             
             if (file) {
+                // 显示状态区域
+                statusSpan.style.display = 'block';
+                
                 // 检查文件大小 (50MB)
                 if (file.size > 50 * 1024 * 1024) {
                     statusSpan.textContent = '文件太大，最大支持50MB';
-                    statusSpan.style.color = '#e74c3c';
+                    statusSpan.className = 'upload-status error';
                     return;
                 }
                 
@@ -308,6 +706,7 @@
                 uploadAttachment();
             } else {
                 statusSpan.textContent = '';
+                statusSpan.style.display = 'none';
             }
         });
         
@@ -315,11 +714,11 @@
         async function uploadAttachment() {
             const fileInput = document.getElementById('attachment-file');
             const file = fileInput.files[0];
-            const statusSpan = document.getElementById('upload-status');
+            const statusSpan = document.getElementById('upload-status-display');
             
             if (!file) {
                 statusSpan.textContent = '请先选择文件';
-                statusSpan.style.color = '#e74c3c';
+                statusSpan.className = 'upload-status error';
                 return;
             }
             
@@ -327,12 +726,12 @@
             const loginData = await checkLoginStatus();
             if (!loginData.logged_in) {
                 statusSpan.textContent = '请先登录';
-                statusSpan.style.color = '#e74c3c';
+                statusSpan.className = 'upload-status error';
                 return;
             }
             
             statusSpan.textContent = '上传中...';
-            statusSpan.style.color = '#2196F3';
+            statusSpan.className = 'upload-status uploading';
             
             try {
                 const formData = new FormData();
@@ -354,13 +753,15 @@
                     console.log('当前附件列表:', attachments);
                     
                     statusSpan.textContent = '上传成功!';
-                    statusSpan.style.color = '#4CAF50';
+                    statusSpan.className = 'upload-status success';
                     
                     // 清空文件选择
                     fileInput.value = '';
                     
                     setTimeout(() => {
                         statusSpan.textContent = '';
+                        statusSpan.className = 'upload-status';
+                        statusSpan.style.display = 'none';
                     }, 3000);
                 } else {
                     throw new Error(result.message);
@@ -368,20 +769,22 @@
             } catch (error) {
                 console.error('上传失败:', error);
                 statusSpan.textContent = `上传失败: ${error.message}`;
-                statusSpan.style.color = '#e74c3c';
+                statusSpan.className = 'upload-status error';
                 
                 // 清空文件选择，以便用户重新选择
                 setTimeout(() => {
                     fileInput.value = '';
                     statusSpan.textContent = '';
+                    statusSpan.className = 'upload-status';
+                    statusSpan.style.display = 'none';
                 }, 3000);
             }
         }
         
         // 更新附件列表显示
         function updateAttachmentsList() {
-            const container = document.getElementById('attachments-container');
-            const list = document.getElementById('attachments-list');
+            const container = document.getElementById('current-attachments');
+            const list = document.getElementById('current-attachments-list');
             
             if (Object.keys(attachments).length === 0) {
                 container.style.display = 'none';
