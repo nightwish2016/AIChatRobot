@@ -45,6 +45,331 @@
         .toggle-btn:active {
             background: #d0d0d0;
         }
+        
+        /* 侧边栏汉堡菜单样式 */
+        .sidebar-toggle-btn {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            padding: 0;
+            border-radius: 6px;
+            transition: background-color 0.15s ease;
+        }
+        
+        .sidebar-toggle-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .hamburger-line {
+            width: 18px;
+            height: 2px;
+            background: #5f6368;
+            border-radius: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        /* 收缩状态的侧边栏 */
+        .sidebar.collapsed {
+            width: 64px;
+        }
+        
+        /* 收缩时隐藏所有菜单内容，只保留汉堡菜单 */
+        .sidebar.collapsed .sidebar-nav,
+        .sidebar.collapsed .sidebar-footer {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        
+        /* 确保汉堡菜单在收缩时仍然可见和可点击 */
+        .sidebar.collapsed .sidebar-toggle-btn {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        
+        /* 动画过渡 */
+        .sidebar {
+            transition: width 0.3s ease;
+        }
+        
+        .sidebar-nav,
+        .sidebar-footer {
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        
+        .sidebar-title {
+            transition: opacity 0.2s ease;
+        }
+        
+        .nav-item .text {
+            transition: opacity 0.2s ease;
+        }
+        
+        /* 统一顶部栏样式 - Gemini风格 */
+        .unified-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #ffffff;
+            border-bottom: 1px solid #e8eaed;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: none;
+        }
+        
+        .top-left, .top-center, .top-right {
+            display: flex;
+            align-items: center;
+        }
+        
+        .top-left {
+            flex: 0 0 auto;
+            margin-right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* 顶部栏标题样式 - 科技感字体 */
+        .topbar-title {
+            font-size: 22px;
+            font-weight: 700;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 35%, #667eea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(26, 115, 232, 0.3);
+            display: none; /* 默认隐藏，桌面端显示 */
+            position: relative;
+        }
+        
+        .topbar-title::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -8px;
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 100%);
+            border-radius: 2px;
+            transform: translateY(-50%);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+        }
+        
+        .top-right {
+            flex: 0 0 auto;
+            margin-left: 20px;
+            gap: 12px;
+        }
+        
+        /* 当侧边栏打开时隐藏整个统一顶部栏 */
+        .unified-top-bar.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+        }
+        
+        /* Google/Gemini风格按钮 */
+        .unified-top-bar .topbar-auth-btn {
+            height: 36px;
+            border-radius: 20px;
+            padding: 8px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #dadce0;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        
+        .unified-top-bar .topbar-login-btn {
+            background: #ffffff;
+            color: #3c4043;
+        }
+        
+        .unified-top-bar .topbar-login-btn:hover {
+            background: #f8f9fa;
+            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.15);
+        }
+        
+        .unified-top-bar .topbar-register-btn {
+            background: #1a73e8;
+            color: #ffffff;
+            border-color: #1a73e8;
+        }
+        
+        .unified-top-bar .topbar-register-btn:hover {
+            background: #1765cc;
+            border-color: #1765cc;
+            box-shadow: 0 1px 3px rgba(26, 115, 232, 0.4);
+        }
+        
+        .unified-top-bar .topbar-auth-btn:active {
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+        }
+        
+        /* 主内容区域适配 - 为固定顶部栏留出空间 */
+        .main-content {
+            margin-top: 60px; /* 为统一顶部栏留出空间 */
+        }
+        
+        /* 桌面端适配 - 侧边栏显示时 */
+        @media (min-width: 769px) {
+            .unified-top-bar {
+                left: 280px; /* 给左侧菜单栏留出空间 */
+                transition: left 0.3s ease;
+            }
+            
+            .unified-top-bar.sidebar-collapsed {
+                left: 64px; /* 收缩时调整顶部栏位置 */
+            }
+            
+            .topbar-title {
+                display: block; /* 桌面端显示标题 */
+            }
+            
+            .mobile-hamburger-btn {
+                display: none; /* 桌面端隐藏移动端汉堡菜单 */
+            }
+        }
+        
+        /* 移动端汉堡菜单按钮 */
+        .mobile-hamburger-btn {
+            width: 36px;
+            height: 36px;
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            display: none; /* 默认隐藏，只在移动端显示 */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: #5f6368;
+            transition: background-color 0.15s ease;
+        }
+        
+        .mobile-hamburger-btn:hover {
+            background: #f1f3f4;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .unified-top-bar {
+                left: 0; /* 移动端占满全宽 */
+                height: 56px;
+                padding: 0 16px;
+            }
+            
+            .main-content {
+                margin-top: 56px; /* 调整移动端顶部间距 */
+            }
+            
+            .top-left {
+                margin-right: 12px;
+            }
+            
+            .top-right {
+                margin-left: 12px;
+                gap: 8px;
+            }
+            
+            /* 移动端显示汉堡菜单按钮 */
+            .mobile-hamburger-btn {
+                display: flex;
+            }
+            
+            /* 移动端隐藏顶部栏标题 */
+            .topbar-title {
+                display: none;
+            }
+            
+            /* 隐藏侧边栏的汉堡菜单按钮 */
+            .sidebar-toggle-btn {
+                display: none;
+            }
+            
+            .unified-top-bar .topbar-auth-btn {
+                height: 32px;
+                padding: 6px 16px;
+                font-size: 13px;
+                border-radius: 16px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .unified-top-bar {
+                left: 0; /* 小屏幕也占满全宽 */
+                height: 56px; /* 增加高度以提供更好的视觉空间 */
+                padding: 0 16px; /* 增加左右内边距 */
+            }
+            
+            .main-content {
+                margin-top: 56px; /* 调整小屏幕顶部间距 */
+            }
+            
+            .top-left {
+                margin-right: 12px; /* 增加右边距 */
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .top-right {
+                margin-left: 12px; /* 增加左边距 */
+                gap: 10px; /* 增加按钮间距 */
+                display: flex;
+                align-items: center;
+            }
+            
+            .mobile-hamburger-btn {
+                width: 36px; /* 增加宽度 */
+                height: 36px; /* 增加高度 */
+                font-size: 16px;
+                border-radius: 8px; /* 增加圆角 */
+                background: rgba(60, 64, 67, 0.08);
+                color: #5f6368;
+                border: none;
+                transition: all 0.15s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .mobile-hamburger-btn:hover {
+                background: rgba(60, 64, 67, 0.12);
+            }
+            
+            .unified-top-bar .topbar-auth-btn {
+                height: 34px; /* 统一高度 */
+                padding: 8px 16px; /* 增加内边距 */
+                font-size: 13px; /* 增加字体大小 */
+                border-radius: 17px;
+                min-width: 65px; /* 设置最小宽度 */
+                font-weight: 500;
+                white-space: nowrap;
+            }
+        }
         /* 字幕提取页面特定样式 */
         /* 字幕提取主要内容区域 - 模仿 #history 的样式 */
         .subtitle-main {
@@ -445,7 +770,12 @@
         <!-- 左侧菜单栏 -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2 class="sidebar-title">Toolify AI</h2>
+                <!-- 汉堡菜单按钮 - 用于收缩/展开侧边栏 -->
+                <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarCollapse()">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
             </div>
             
             <nav class="sidebar-nav">
@@ -485,38 +815,37 @@
         <!-- 移动端遮罩层 -->
         <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
         
-        <!-- 移动端浮动菜单按钮 -->
-        <button class="mobile-menu-float" onclick="toggleSidebar()">☰</button>
-        
-        <!-- 主内容区域 -->
-        <div class="main-content">
-            <!-- 隐藏的顶部栏 - 仅在移动端未登录时显示 -->
-            <div class="top-bar" id="top-bar" style="display: none;">
-                <div class="left-section">
-                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
-                        ☰
+        <!-- 统一顶部栏 - 包含所有顶部元素 -->
+        <div class="unified-top-bar" id="unified-top-bar">
+            <!-- 左侧：Toolify AI 标题和移动端汉堡菜单 -->
+            <div class="top-left">
+                <button class="mobile-hamburger-btn" onclick="toggleSidebar()">☰</button>
+                <h1 class="topbar-title">Toolify AI</h1>
+            </div>
+            
+            <!-- 右侧：登录注册按钮 -->
+            <div class="top-right">
+                <!-- 右上角登录/注册按钮（未登录时显示） -->
+                <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
+                    <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
+                            class="topbar-auth-btn topbar-login-btn">
+                        登录
+                    </button>
+                    <button onclick="window.location.href='/register'" 
+                            class="topbar-auth-btn topbar-register-btn">
+                        注册
                     </button>
                 </div>
                 
-                <div class="right-section">
-                    <!-- 右上角登录/注册按钮（未登录时显示） -->
-                    <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
-                        <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
-                                class="topbar-auth-btn topbar-login-btn">
-                            登录
-                        </button>
-                        <button onclick="window.location.href='/register'" 
-                                class="topbar-auth-btn topbar-register-btn">
-                            注册
-                        </button>
-                    </div>
-                    
-                    <!-- 已登录时显示用户信息 -->
-                    <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
-                        <span id="topbar-welcome-text" style="font-size: 14px; color: #555;">欢迎!</span>
-                    </div>
+                <!-- 已登录时显示用户信息 -->
+                <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
+                    <span id="topbar-welcome-text" style="font-size: 14px; color: #555;">欢迎!</span>
                 </div>
             </div>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
             
             <!-- 内容区域 -->
             <div class="chat-area">
@@ -1030,7 +1359,36 @@
         function toggleUserPopup() {
             const popup = document.getElementById('popup');
             if (popup) {
-                popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+                const isVisible = popup.style.display === 'block';
+                
+                if (!isVisible) {
+                    popup.style.display = 'block';
+                    // 添加全局点击监听器
+                    setTimeout(() => {
+                        document.addEventListener('click', closePopupOnOutsideClick);
+                    }, 0);
+                } else {
+                    popup.style.display = 'none';
+                    // 移除全局点击监听器
+                    document.removeEventListener('click', closePopupOnOutsideClick);
+                }
+            }
+        }
+        
+        // 点击外部区域关闭弹窗
+        function closePopupOnOutsideClick(event) {
+            const popup = document.getElementById('popup');
+            const sidebarUsername = document.getElementById('sidebar-username');
+            
+            if (popup && popup.style.display === 'block') {
+                // 检查点击是否在弹窗内部或用户名按钮上
+                const isInsidePopup = popup.contains(event.target);
+                const isOnUsernameButton = sidebarUsername && sidebarUsername.contains(event.target);
+                
+                if (!isInsidePopup && !isOnUsernameButton) {
+                    popup.style.display = 'none';
+                    document.removeEventListener('click', closePopupOnOutsideClick);
+                }
             }
         }
         
@@ -1038,6 +1396,18 @@
         function handleSidebarLogin() {
             console.log('侧边栏登录按钮被点击');
             window.location.href = '/loginPage?origin=' + encodeURIComponent(window.location.pathname);
+        }
+        
+        // 检查登录状态的函数
+        async function checkLoginStatus() {
+            try {
+                const response = await fetch('/check-login');
+                const data = await response.json();           
+                return data;
+            } catch (error) {
+                console.error("Error checking login status:", error);
+                return { logged_in: false };
+            }
         }
         
         // 初始化新布局的登录功能
@@ -1093,6 +1463,21 @@
                 }
             } catch (error) {
                 console.error('初始化登录状态失败:', error);
+            }
+        }
+        
+        // 侧边栏收缩/展开功能
+        function toggleSidebarCollapse() {
+            const sidebar = document.getElementById('sidebar');
+            const topBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            // 同时调整顶部栏位置
+            if (sidebar.classList.contains('collapsed')) {
+                topBar.classList.add('sidebar-collapsed');
+            } else {
+                topBar.classList.remove('sidebar-collapsed');
             }
         }
         

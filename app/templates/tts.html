@@ -144,14 +144,33 @@
             gap: 12px;
         }
         
-        /* 顶部栏标题样式 */
+        /* 顶部栏标题样式 - 科技感字体 */
         .topbar-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #1a73e8;
+            font-size: 22px;
+            font-weight: 700;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 35%, #667eea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin: 0;
-            letter-spacing: -0.3px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(26, 115, 232, 0.3);
             display: none; /* 默认隐藏，桌面端显示 */
+            position: relative;
+        }
+        
+        .topbar-title::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -8px;
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 100%);
+            border-radius: 2px;
+            transform: translateY(-50%);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
         }
         
         .top-right {
@@ -301,34 +320,54 @@
         @media (max-width: 480px) {
             .unified-top-bar {
                 left: 0; /* 小屏幕也占满全宽 */
-                height: 52px;
-                padding: 0 12px;
+                height: 56px; /* 增加高度以提供更好的视觉空间 */
+                padding: 0 16px; /* 增加左右内边距 */
             }
             
             .main-content {
-                margin-top: 52px; /* 调整小屏幕顶部间距 */
+                margin-top: 56px; /* 调整小屏幕顶部间距 */
             }
             
             .top-left {
-                margin-right: 8px;
+                margin-right: 12px; /* 增加右边距 */
+                display: flex;
+                align-items: center;
+                gap: 12px;
             }
             
             .top-right {
-                margin-left: 8px;
-                gap: 6px;
+                margin-left: 12px; /* 增加左边距 */
+                gap: 10px; /* 增加按钮间距 */
+                display: flex;
+                align-items: center;
             }
             
             .mobile-hamburger-btn {
-                width: 32px;
-                height: 32px;
+                width: 36px; /* 增加宽度 */
+                height: 36px; /* 增加高度 */
                 font-size: 16px;
+                border-radius: 8px; /* 增加圆角 */
+                background: rgba(60, 64, 67, 0.08);
+                color: #5f6368;
+                border: none;
+                transition: all 0.15s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .mobile-hamburger-btn:hover {
+                background: rgba(60, 64, 67, 0.12);
             }
             
             .unified-top-bar .topbar-auth-btn {
-                height: 28px;
-                padding: 4px 12px;
-                font-size: 12px;
-                border-radius: 14px;
+                height: 34px; /* 统一高度 */
+                padding: 8px 16px; /* 增加内边距 */
+                font-size: 13px; /* 增加字体大小 */
+                border-radius: 17px;
+                min-width: 65px; /* 设置最小宽度 */
+                font-weight: 500;
+                white-space: nowrap;
             }
         }
         /* TTS 主要内容区域 - 模仿 #history 的样式 */
@@ -1065,8 +1104,31 @@
                     // 显示弹窗前，检查移动端安全区域
                     adjustPopupForMobile(popup);
                     popup.style.display = 'block';
+                    // 添加全局点击监听器
+                    setTimeout(() => {
+                        document.addEventListener('click', closePopupOnOutsideClick);
+                    }, 0);
                 } else {
                     popup.style.display = 'none';
+                    // 移除全局点击监听器
+                    document.removeEventListener('click', closePopupOnOutsideClick);
+                }
+            }
+        }
+        
+        // 点击外部区域关闭弹窗
+        function closePopupOnOutsideClick(event) {
+            const popup = document.getElementById('popup');
+            const sidebarUsername = document.getElementById('sidebar-username');
+            
+            if (popup && popup.style.display === 'block') {
+                // 检查点击是否在弹窗内部或用户名按钮上
+                const isInsidePopup = popup.contains(event.target);
+                const isOnUsernameButton = sidebarUsername && sidebarUsername.contains(event.target);
+                
+                if (!isInsidePopup && !isOnUsernameButton) {
+                    popup.style.display = 'none';
+                    document.removeEventListener('click', closePopupOnOutsideClick);
                 }
             }
         }
@@ -1101,6 +1163,18 @@
         function handleSidebarLogin() {
             console.log('侧边栏登录按钮被点击');
             window.location.href = '/loginPage?origin=' + encodeURIComponent(window.location.pathname);
+        }
+        
+        // 检查登录状态的函数
+        async function checkLoginStatus() {
+            try {
+                const response = await fetch('/check-login');
+                const data = await response.json();           
+                return data;
+            } catch (error) {
+                console.error("Error checking login status:", error);
+                return { logged_in: false };
+            }
         }
         
         // 初始化新布局的登录功能

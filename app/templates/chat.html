@@ -157,14 +157,33 @@
             gap: 12px;
         }
         
-        /* 顶部栏标题样式 */
+        /* 顶部栏标题样式 - 科技感字体 */
         .topbar-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #1a73e8;
+            font-size: 22px;
+            font-weight: 700;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 35%, #667eea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin: 0;
-            letter-spacing: -0.3px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(26, 115, 232, 0.3);
             display: none; /* 默认隐藏，桌面端显示 */
+            position: relative;
+        }
+        
+        .topbar-title::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -8px;
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 100%);
+            border-radius: 2px;
+            transform: translateY(-50%);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
         }
         
         .top-center {
@@ -199,33 +218,35 @@
             position: relative;
         }
         
-        /* Gemini风格模型选择器 */
+        /* 完全隐形的模型选择器 */
         .model-selector-btn {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: #f8f9fa;
-            border: 1px solid #dadce0;
-            border-radius: 24px;
+            background: transparent;
+            border: none;
+            border-radius: 0;
             padding: 8px 16px;
-            color: #3c4043;
+            color: #5f6368;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 400;
             cursor: pointer;
             transition: all 0.15s ease;
             min-width: 140px;
             justify-content: space-between;
             height: 36px;
             box-sizing: border-box;
+            opacity: 0.9;
         }
         
         .model-selector-btn:hover {
-            background: #f1f3f4;
-            border-color: #dadce0;
+            background: transparent;
+            opacity: 1;
+            color: #3c4043;
         }
         
         .model-selector-btn:active {
-            background: #e8eaed;
+            background: transparent;
         }
         
         .model-selector-btn svg {
@@ -473,42 +494,62 @@
         @media (max-width: 480px) {
             .unified-top-bar {
                 left: 0; /* 小屏幕也占满全宽 */
-                height: 52px;
-                padding: 0 12px;
+                height: 56px; /* 增加高度以提供更好的视觉空间 */
+                padding: 0 16px; /* 增加左右内边距 */
             }
             
             .main-content {
-                margin-top: 52px; /* 调整小屏幕顶部间距 */
+                margin-top: 56px; /* 调整小屏幕顶部间距 */
             }
             
             .top-left {
-                margin-right: 8px;
+                margin-right: 12px; /* 增加右边距 */
+                display: flex;
+                align-items: center;
+                gap: 12px;
             }
             
             .top-right {
-                margin-left: 8px;
-                gap: 6px;
+                margin-left: 12px; /* 增加左边距 */
+                gap: 10px; /* 增加按钮间距 */
+                display: flex;
+                align-items: center;
             }
             
             .mobile-hamburger-btn {
-                width: 32px;
-                height: 32px;
+                width: 36px; /* 增加宽度 */
+                height: 36px; /* 增加高度 */
                 font-size: 16px;
+                border-radius: 8px; /* 增加圆角 */
+                background: rgba(60, 64, 67, 0.08);
+                color: #5f6368;
+                border: none;
+                transition: all 0.15s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .mobile-hamburger-btn:hover {
+                background: rgba(60, 64, 67, 0.12);
             }
             
             .model-selector-btn {
-                min-width: 100px;
-                padding: 4px 8px;
-                font-size: 12px;
-                height: 28px;
-                border-radius: 14px;
+                min-width: 110px; /* 增加最小宽度 */
+                padding: 6px 12px; /* 增加内边距 */
+                font-size: 13px; /* 增加字体大小 */
+                height: 34px; /* 统一高度 */
+                border-radius: 17px;
             }
             
             .unified-top-bar .topbar-auth-btn {
-                height: 28px;
-                padding: 4px 12px;
-                font-size: 12px;
-                border-radius: 14px;
+                height: 34px; /* 统一高度 */
+                padding: 8px 16px; /* 增加内边距 */
+                font-size: 13px; /* 增加字体大小 */
+                border-radius: 17px;
+                min-width: 65px; /* 设置最小宽度 */
+                font-weight: 500;
+                white-space: nowrap;
             }
         }
         
@@ -822,6 +863,49 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            position: relative;
+        }
+        
+        /* Gemini-style send icon */
+        .send-icon {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            width: 36px;
+            height: 36px;
+            background: #6b7280;
+            border: none;
+            border-radius: 12px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .send-icon:hover {
+            background: #4b5563;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .send-icon:active {
+            transform: scale(0.95);
+        }
+        
+        .send-arrow {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            transform: rotate(-45deg);
+            display: inline-block;
+        }
+        
+        /* Add padding to textarea when send icon is visible */
+        #prompt.has-text {
+            padding-right: 52px;
         }
         
         #prompt {
@@ -1098,6 +1182,9 @@
                                 <!-- 文本输入区域包装器 -->
                 <div class="textarea-wrapper">
                     <textarea id="prompt" rows="1" placeholder="请输入您的消息..."></textarea>
+                    <button class="send-icon" id="send-icon" onclick="sendToChatGPT()" title="发送消息">
+                        <span class="send-arrow">➤</span>
+                    </button>
                 </div>
             </div>
             
@@ -1118,7 +1205,8 @@
                     <option value="gpt-4o-mini">GPT-4O-mini</option>
                     <option value="gpt-4o">GPT-4O</option>
                 </select>
-                <button onclick="sendToChatGPT()">发送</button>
+                <!-- Hide the original send button -->
+                <button onclick="sendToChatGPT()" style="display: none;">发送</button>
             </div>
         </div>
         
@@ -1213,8 +1301,31 @@
                     // 显示弹窗前，检查移动端安全区域
                     adjustPopupForMobile(popup);
                     popup.style.display = 'block';
+                    // 添加全局点击监听器
+                    setTimeout(() => {
+                        document.addEventListener('click', closePopupOnOutsideClick);
+                    }, 0);
                 } else {
                     popup.style.display = 'none';
+                    // 移除全局点击监听器
+                    document.removeEventListener('click', closePopupOnOutsideClick);
+                }
+            }
+        }
+        
+        // 点击外部区域关闭弹窗
+        function closePopupOnOutsideClick(event) {
+            const popup = document.getElementById('popup');
+            const sidebarUsername = document.getElementById('sidebar-username');
+            
+            if (popup && popup.style.display === 'block') {
+                // 检查点击是否在弹窗内部或用户名按钮上
+                const isInsidePopup = popup.contains(event.target);
+                const isOnUsernameButton = sidebarUsername && sidebarUsername.contains(event.target);
+                
+                if (!isInsidePopup && !isOnUsernameButton) {
+                    popup.style.display = 'none';
+                    document.removeEventListener('click', closePopupOnOutsideClick);
                 }
             }
         }
@@ -1425,6 +1536,7 @@
         
         // 新增：textarea自动高度调整功能
         const textarea = document.getElementById('prompt');
+        const sendIcon = document.getElementById('send-icon');
         
         // 自动调整textarea高度
         function autoResize(element) {
@@ -1435,18 +1547,35 @@
             element.style.height = newHeight + 'px';
         }
         
+        // Gemini-style send icon toggle
+        function toggleSendIcon() {
+            const hasText = textarea.value.trim().length > 0;
+            if (hasText) {
+                sendIcon.style.display = 'flex';
+                textarea.classList.add('has-text');
+            } else {
+                sendIcon.style.display = 'none';
+                textarea.classList.remove('has-text');
+            }
+        }
+        
         // 监听输入事件
         textarea.addEventListener('input', function() {
             autoResize(this);
+            toggleSendIcon();
         });
         
         // 监听键盘事件（处理删除等操作）
         textarea.addEventListener('keydown', function() {
-            setTimeout(() => autoResize(this), 0);
+            setTimeout(() => {
+                autoResize(this);
+                toggleSendIcon();
+            }, 0);
         });
         
-        // 初始化高度
+        // 初始化高度和send icon状态
         autoResize(textarea);
+        toggleSendIcon();
         
         // 移动端浏览器导航栏适配
         function handleMobileViewport() {

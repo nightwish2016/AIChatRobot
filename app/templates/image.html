@@ -214,14 +214,33 @@
             gap: 12px;
         }
         
-        /* 顶部栏标题样式 */
+        /* 顶部栏标题样式 - 科技感字体 */
         .topbar-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #1a73e8;
+            font-size: 22px;
+            font-weight: 700;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 35%, #667eea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin: 0;
-            letter-spacing: -0.3px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(26, 115, 232, 0.3);
             display: none; /* 默认隐藏，桌面端显示 */
+            position: relative;
+        }
+        
+        .topbar-title::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -8px;
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 100%);
+            border-radius: 2px;
+            transform: translateY(-50%);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
         }
         
         .top-center {
@@ -328,6 +347,60 @@
             }
         }
         
+        @media (max-width: 480px) {
+            .unified-top-bar {
+                left: 0; /* 小屏幕也占满全宽 */
+                height: 56px; /* 增加高度以提供更好的视觉空间 */
+                padding: 0 16px; /* 增加左右内边距 */
+            }
+            
+            .main-content {
+                margin-top: 56px; /* 调整小屏幕顶部间距 */
+            }
+            
+            .top-left {
+                margin-right: 12px; /* 增加右边距 */
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .top-right {
+                margin-left: 12px; /* 增加左边距 */
+                gap: 10px; /* 增加按钮间距 */
+                display: flex;
+                align-items: center;
+            }
+            
+            .mobile-hamburger-btn {
+                width: 36px; /* 增加宽度 */
+                height: 36px; /* 增加高度 */
+                font-size: 16px;
+                border-radius: 8px; /* 增加圆角 */
+                background: rgba(60, 64, 67, 0.08);
+                color: #5f6368;
+                border: none;
+                transition: all 0.15s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .mobile-hamburger-btn:hover {
+                background: rgba(60, 64, 67, 0.12);
+            }
+            
+            .unified-top-bar .topbar-auth-btn {
+                height: 34px; /* 统一高度 */
+                padding: 8px 16px; /* 增加内边距 */
+                font-size: 13px; /* 增加字体大小 */
+                border-radius: 17px;
+                min-width: 65px; /* 设置最小宽度 */
+                font-weight: 500;
+                white-space: nowrap;
+            }
+        }
+        
         /* Google/Gemini风格按钮 */
         .unified-top-bar .topbar-auth-btn {
             height: 36px;
@@ -364,6 +437,76 @@
             background: #1765cc;
             border-color: #1765cc;
             box-shadow: 0 1px 3px rgba(26, 115, 232, 0.4);
+        }
+        
+        /* Gemini-style image generation input area */
+        .textarea-wrapper {
+            position: relative;
+            flex: 1;
+        }
+        
+        .textarea-wrapper textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.2s ease;
+            background: #ffffff;
+            box-sizing: border-box;
+        }
+        
+        .textarea-wrapper textarea:focus {
+            outline: none;
+            border-color: #4285f4;
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.15);
+        }
+        
+        /* Gemini-style generate icon */
+        .generate-icon {
+            position: absolute;
+            right: 12px;
+            bottom: 50%;
+            transform: translateY(50%);
+            width: 34px;
+            height: 34px;
+            background: #6b7280;
+            border: none;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .generate-icon:hover {
+            background: #4b5563;
+            transform: translateY(50%) scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .generate-icon:active {
+            transform: translateY(50%) scale(0.95);
+        }
+        
+        .send-arrow {
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            transform: rotate(-45deg);
+            display: inline-block;
+        }
+        
+        /* Add padding to textarea when generate icon is visible */
+        #prompt.has-text {
+            padding-right: 58px;
         }
     </style>
 </head>
@@ -510,10 +653,16 @@
                     </select>
                 </div>
             </div>
-            <textarea id="prompt" rows="4" placeholder="请描述您想要生成的图像..."></textarea>
+            <div class="textarea-wrapper">
+                <textarea id="prompt" rows="4" placeholder="请描述您想要生成的图像..."></textarea>
+                <button class="generate-icon" id="generate-icon" title="生成图像">
+                    <span class="send-arrow">➤</span>
+                </button>
+            </div>
             <div class="controls">
                 <div style="flex: 1;"></div>
-                <button id="imageCreate">生成图像</button>
+                <!-- Hide the original generate button -->
+                <button id="imageCreate" style="display: none;">生成图像</button>
             </div>
         </div>
     </div>
@@ -553,7 +702,43 @@
             // 初始化第一次触发select1的change事件，填充select2
             model.dispatchEvent(new Event('change'));
 
-            // 绑定生成图像按钮事件
+            // Gemini-style generate icon functionality
+            const textarea = document.getElementById('prompt');
+            const generateIcon = document.getElementById('generate-icon');
+            
+            // Toggle generate icon based on textarea content
+            function toggleGenerateIcon() {
+                const hasText = textarea.value.trim().length > 0;
+                if (hasText) {
+                    generateIcon.style.display = 'flex';
+                    textarea.classList.add('has-text');
+                } else {
+                    generateIcon.style.display = 'none';
+                    textarea.classList.remove('has-text');
+                }
+            }
+            
+            // Bind generate icon click event
+            generateIcon.onclick = function() {
+                console.log('生成图像按钮被点击');
+                const prompt = document.getElementById('prompt').value;
+                const model = document.getElementById('model-select').value;
+                const pixl = document.getElementById('pixl-select').value;
+                console.log('参数:', { prompt, model, pixl });
+                generateImage(prompt, model, pixl);
+            };
+            
+            // Bind textarea input event
+            textarea.addEventListener('input', toggleGenerateIcon);
+            textarea.addEventListener('keyup', toggleGenerateIcon);
+            textarea.addEventListener('paste', function() {
+                setTimeout(toggleGenerateIcon, 0);
+            });
+            
+            // Initialize icon state
+            toggleGenerateIcon();
+            
+            // Bind original button for compatibility (hidden)
             var button = document.getElementById('imageCreate');
             button.onclick = function() {
                 console.log('生成图像按钮被点击');
@@ -909,7 +1094,36 @@
         function toggleUserPopup() {
             const popup = document.getElementById('popup');
             if (popup) {
-                popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+                const isVisible = popup.style.display === 'block';
+                
+                if (!isVisible) {
+                    popup.style.display = 'block';
+                    // 添加全局点击监听器
+                    setTimeout(() => {
+                        document.addEventListener('click', closePopupOnOutsideClick);
+                    }, 0);
+                } else {
+                    popup.style.display = 'none';
+                    // 移除全局点击监听器
+                    document.removeEventListener('click', closePopupOnOutsideClick);
+                }
+            }
+        }
+        
+        // 点击外部区域关闭弹窗
+        function closePopupOnOutsideClick(event) {
+            const popup = document.getElementById('popup');
+            const sidebarUsername = document.getElementById('sidebar-username');
+            
+            if (popup && popup.style.display === 'block') {
+                // 检查点击是否在弹窗内部或用户名按钮上
+                const isInsidePopup = popup.contains(event.target);
+                const isOnUsernameButton = sidebarUsername && sidebarUsername.contains(event.target);
+                
+                if (!isInsidePopup && !isOnUsernameButton) {
+                    popup.style.display = 'none';
+                    document.removeEventListener('click', closePopupOnOutsideClick);
+                }
             }
         }
         
