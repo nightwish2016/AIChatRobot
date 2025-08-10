@@ -3,6 +3,33 @@
 /* 图像控制器的响应式设计 */
 @media (max-width: 768px) {
     .image-controls {
+        flex-direction: row;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    
+    .control-group {
+        flex: 1;
+        min-width: 150px;
+        gap: 6px;
+    }
+    
+    .control-group label {
+        text-align: left;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+    
+    .control-group select {
+        width: 100%;
+        min-width: auto;
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .image-controls {
         flex-direction: column;
         gap: 10px;
     }
@@ -10,27 +37,17 @@
     .control-group {
         flex-direction: column;
         align-items: stretch;
-        gap: 5px;
+        gap: 6px;
         min-width: auto;
     }
     
     .control-group label {
-        text-align: left;
+        font-size: 14px;
     }
     
     .control-group select {
-        width: 100%;
-        min-width: auto;
-    }
-}
-
-@media (max-width: 480px) {
-    .image-controls {
-        gap: 8px;
-    }
-    
-    .control-group {
-        gap: 3px;
+        padding: 12px 16px;
+        font-size: 16px;
     }
 }
 

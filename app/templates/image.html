@@ -176,19 +176,21 @@
         <!-- 移动端遮罩层 -->
         <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
         
+        <!-- 移动端浮动菜单按钮 -->
+        <button class="mobile-menu-float" onclick="toggleSidebar()">☰</button>
+        
         <!-- 主内容区域 -->
         <div class="main-content">
-            <!-- 顶部栏 -->
-            <div class="top-bar">
+            <!-- 隐藏的顶部栏 - 仅在移动端未登录时显示 -->
+            <div class="top-bar" id="top-bar" style="display: none;">
                 <div class="left-section">
                     <button class="mobile-menu-btn" onclick="toggleSidebar()">
                         ☰
                     </button>
-                    <span>Toolify AI</span>
                 </div>
                 
                 <div class="right-section">
-                    <!-- 右上角登录/注册按钮（未登录时显示） -->
+                    <!-- 右上角登录/注册按钮（移动端未登录时显示） -->
                     <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
                         <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
                                 style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
@@ -198,12 +200,6 @@
                                 style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
                             注册
                         </button>
-                    </div>
-                    
-                    <!-- 用户信息（已登录时显示） -->
-                    <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
-                        <span id="topbar-welcome-text">欢迎, {{ user_name }}!</span>
-                        <img src="{{ url_for('static', filename='image/login.png') }}" alt="已登录" style="width: 24px; height: 24px;"/> 
                     </div>
                 </div>
             </div>

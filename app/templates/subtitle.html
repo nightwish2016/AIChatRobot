@@ -50,10 +50,12 @@
         .subtitle-main {
             flex: 1;
             background: white;
-            padding: 20px;
+            padding: 15px;
             overflow-y: auto;
             border-radius: 8px;
             margin-bottom: 0;
+            min-height: 0;
+            max-height: calc(100vh - 150px);
         }
 
         .subtitle-form-container {
@@ -72,32 +74,35 @@
 
         /* 字幕提取操作区域 - 模仿 input-section 样式 */
         .subtitle-controls {
-            padding: 20px;
+            padding: 15px;
             background: white;
             border-top: 1px solid #e5e7eb;
             border-radius: 0 0 8px 8px;
+            flex-shrink: 0;
+            max-height: 30vh;
+            overflow-y: auto;
         }
 
         .process-controls {
             display: flex;
             justify-content: center;
-            gap: 15px;
-            margin-top: 15px;
+            gap: 10px;
+            margin-top: 10px;
         }
 
         .subtitle-form h1 {
             color: #333;
-            margin-bottom: 30px;
-            font-size: 2.8rem;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
             font-weight: 600;
         }
 
         .upload-area {
-            border: 3px dashed #ddd;
-            border-radius: 15px;
-            padding: 60px;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 20px;
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -110,20 +115,20 @@
         }
 
         .upload-area .upload-icon {
-            font-size: 5em;
+            font-size: 2.5em;
             color: #667eea;
-            margin-bottom: 25px;
+            margin-bottom: 10px;
         }
 
         .upload-area .upload-text {
-            font-size: 1.4em;
-            margin-bottom: 20px;
+            font-size: 1em;
+            margin-bottom: 8px;
         }
 
         .upload-area .upload-hint {
             color: #999;
-            margin-bottom: 25px;
-            font-size: 1.1em;
+            margin-bottom: 10px;
+            font-size: 0.8em;
         }
 
         .btn {
@@ -170,6 +175,12 @@
             transform: none;
             box-shadow: none;
         }
+        
+        .btn:disabled:hover {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            transform: none;
+            box-shadow: none;
+        }
 
         .status {
             margin: 20px 0;
@@ -194,29 +205,29 @@
         }
 
         .options {
-            margin: 20px 0;
-            display: none;
+            margin: 15px 0;
+            display: block;
         }
 
         .option-group {
-            margin: 20px 0;
+            margin: 12px 0;
             text-align: left;
         }
 
         .option-group label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
             font-weight: 500;
             color: #555;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
         }
 
         .option-group select {
             width: 100%;
-            padding: 15px 20px;
+            padding: 10px 15px;
             border: 2px solid #e1e5e9;
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 14px;
             background: white;
             cursor: pointer;
             transition: border-color 0.3s ease;
@@ -289,56 +300,134 @@
             display: none;
         }
 
-        /* 响应式设计 */
-        @media (max-width: 768px) {
+        /* 确保页面在100%缩放下完全可见 */
+        @media screen and (max-height: 800px) {
             .subtitle-main {
-                padding: 15px;
+                max-height: calc(100vh - 120px);
+                padding: 12px;
             }
-
+            
             .subtitle-controls {
+                padding: 12px;
+                max-height: 25vh;
+            }
+            
+            .upload-area {
                 padding: 15px;
             }
-
-            .subtitle-form {
-                padding: 25px;
-                max-width: 95%;
-            }
-
+            
             .subtitle-form h1 {
-                font-size: 2.2rem;
-                margin-bottom: 25px;
+                font-size: 1.6rem;
+                margin-bottom: 12px;
             }
-
+        }
+        
+        @media screen and (max-height: 700px) {
+            .subtitle-main {
+                max-height: calc(100vh - 100px);
+                padding: 10px;
+            }
+            
+            .subtitle-controls {
+                padding: 10px;
+                max-height: 20vh;
+            }
+            
             .upload-area {
-                padding: 40px;
+                padding: 12px;
             }
-
+            
+            .subtitle-form h1 {
+                font-size: 1.4rem;
+                margin-bottom: 10px;
+            }
+            
             .upload-area .upload-icon {
-                font-size: 4em;
-            }
-
-            .btn {
-                padding: 10px 20px;
-                font-size: 14px;
+                font-size: 2em;
             }
         }
 
-        @media (max-width: 480px) {
-            .subtitle-content {
-                padding: 15px;
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .subtitle-main {
+                padding: 12px;
+                padding-bottom: calc(12px + env(safe-area-inset-bottom, 15px));
+            }
+
+            .subtitle-controls {
+                padding: 12px;
+                padding-bottom: calc(20px + env(safe-area-inset-bottom, 25px));
+                margin-bottom: env(safe-area-inset-bottom, 8px);
+            }
+            
+            .process-controls {
+                margin-top: 15px;
+                margin-bottom: 8px;
             }
 
             .subtitle-form {
-                padding: 20px;
+                padding: 15px;
                 max-width: 98%;
             }
 
             .subtitle-form h1 {
-                font-size: 1.8rem;
+                font-size: 1.6rem;
+                margin-bottom: 15px;
             }
 
             .upload-area {
-                padding: 30px;
+                padding: 15px;
+            }
+
+            .upload-area .upload-icon {
+                font-size: 2.2em;
+            }
+
+            .btn {
+                padding: 12px 24px;
+                font-size: 16px;
+                min-height: 48px;
+                width: auto;
+                min-width: 150px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .subtitle-main {
+                padding: 10px;
+                padding-bottom: calc(15px + env(safe-area-inset-bottom, 20px));
+            }
+            
+            .subtitle-controls {
+                padding: 10px;
+                padding-bottom: calc(25px + env(safe-area-inset-bottom, 30px));
+                margin-bottom: env(safe-area-inset-bottom, 12px);
+            }
+            
+            .process-controls {
+                margin-top: 15px;
+                margin-bottom: 10px;
+            }
+
+            .subtitle-form {
+                padding: 12px;
+                max-width: 100%;
+            }
+
+            .subtitle-form h1 {
+                font-size: 1.4rem;
+            }
+
+            .upload-area {
+                padding: 15px;
+            }
+            
+            .btn {
+                padding: 14px 28px;
+                font-size: 16px;
+                min-height: 50px;
+                width: 100%;
+                max-width: 280px;
             }
         }
     </style>
@@ -388,19 +477,21 @@
         <!-- 移动端遮罩层 -->
         <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
         
+        <!-- 移动端浮动菜单按钮 -->
+        <button class="mobile-menu-float" onclick="toggleSidebar()">☰</button>
+        
         <!-- 主内容区域 -->
         <div class="main-content">
-            <!-- 顶部栏 -->
-            <div class="top-bar">
+            <!-- 隐藏的顶部栏 - 仅在移动端未登录时显示 -->
+            <div class="top-bar" id="top-bar" style="display: none;">
                 <div class="left-section">
                     <button class="mobile-menu-btn" onclick="toggleSidebar()">
                         ☰
                     </button>
-                    <span>Toolify AI</span>
                 </div>
                 
                 <div class="right-section">
-                    <!-- 右上角登录/注册按钮（未登录时显示） -->
+                    <!-- 右上角登录/注册按钮（移动端未登录时显示） -->
                     <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
                         <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
                                 style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
@@ -411,86 +502,81 @@
                             注册
                         </button>
                     </div>
-                    
-                    <!-- 用户信息（已登录时显示） -->
-                    <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
-                        <span id="topbar-welcome-text">欢迎, {{ user_name }}!</span>
-                        <img src="{{ url_for('static', filename='image/login.png') }}" alt="已登录" style="width: 24px; height: 24px;"/> 
-                    </div>
                 </div>
             </div>
             
             <!-- 内容区域 -->
             <div class="chat-area">
                 <div class="chat-container">
-        <!-- 用户信息弹窗 -->
-        <div id="popup">    
-            <div id="balance">
-                {% if balance_display %}
-                    <div class="balance-main">余额: {{ balance_display }}</div>
-                    {% if balance_secondary %}
-                        <div class="balance-secondary">(约{{ balance_secondary }})</div>
-                    {% endif %}
-                    <div class="currency-toggle">
-                        <button onclick="toggleCurrency()" class="toggle-btn">
-                            {% if currency_preference == 'CNY' %}切换到美元显示{% else %}切换到人民币显示{% endif %}
-                        </button>
+                    <!-- 用户信息弹窗 -->
+                    <div id="popup">    
+                        <div id="balance">
+                            {% if balance_display %}
+                                <div class="balance-main">余额: {{ balance_display }}</div>
+                                {% if balance_secondary %}
+                                    <div class="balance-secondary">(约{{ balance_secondary }})</div>
+                                {% endif %}
+                                <div class="currency-toggle">
+                                    <button onclick="toggleCurrency()" class="toggle-btn">
+                                        {% if currency_preference == 'CNY' %}切换到美元显示{% else %}切换到人民币显示{% endif %}
+                                    </button>
+                                </div>
+                            {% else %}
+                                <div class="balance-main">余额: ¥{{balance}}</div>
+                            {% endif %}
+                        </div>  
+                        <div id="fund">
+                            <form action="/orderPreCreate">
+                                <button id="fund" type="submit" onclick="window.location.href='/payment_method?user_email={{ user_email }}&amount=10'; return false;">充值</button>
+                            </form>
+                        </div>        
+                        <form action="/logout">
+                            <button id="logoutButton" type="submit">登出</button>
+                        </form>
                     </div>
-                {% else %}
-                    <div class="balance-main">余额: ¥{{balance}}</div>
-                {% endif %}
-            </div>  
-            <div id="fund">
-                <form action="/orderPreCreate">
-                    <button id="fund" type="submit" onclick="window.location.href='/payment_method?user_email={{ user_email }}&amount=10'; return false;">充值</button>
-                </form>
-            </div>        
-            <form action="/logout">
-                <button id="logoutButton" type="submit">登出</button>
-            </form>
-        </div>
 
-                            <!-- 字幕提取主要内容区域 -->
+                    <!-- 字幕提取主要内容区域 -->
                     <div class="subtitle-main">
                         <div class="subtitle-form-container">
-            <div class="subtitle-form">
-                <h1>🎬 视频字幕提取工具</h1>
-                <p style="color: #666; margin-bottom: 30px;">支持提取内嵌字幕、外挂字幕，或使用AI语音识别生成字幕</p>
-                
-                <!-- 登录提示区域 -->
-                <div id="loginPrompt" style="display: none; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 12px; margin-bottom: 30px;">
-                    <div style="font-size: 3em; margin-bottom: 20px;">🔒</div>
-                    <h3 style="color: #333; margin-bottom: 15px;">需要登录</h3>
-                    <p style="color: #666; margin-bottom: 25px;">请先登录后再使用字幕提取功能</p>
-                    <button class="btn" onclick="document.getElementById('loginButton').click()">立即登录</button>
-                </div>
-                
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">📁</div>
-                    <div class="upload-text">点击此处选择文件上传</div>
-                    <div class="upload-hint">支持格式: MP4, AVI, MOV, MKV, WMV, FLV, WEBM, MP3, WAV, M4A, AAC, OGG, FLAC</div>
-                    <input type="file" id="fileInput" class="file-input" accept=".mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.mp3,.wav,.m4a,.aac,.ogg,.flac">
-                </div>
+                            <div class="subtitle-form">
+                                <h1>🎬 视频字幕提取工具</h1>
+                                <p style="color: #666; margin-bottom: 15px; font-size: 0.9rem;">支持提取内嵌字幕、外挂字幕，或使用AI语音识别生成字幕</p>
+                                
+                                <!-- 登录提示区域 -->
+                                <div id="loginPrompt" style="display: none; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 12px; margin-bottom: 30px;">
+                                    <div style="font-size: 3em; margin-bottom: 20px;">🔒</div>
+                                    <h3 style="color: #333; margin-bottom: 15px;">需要登录</h3>
+                                    <p style="color: #666; margin-bottom: 25px;">请先登录后再使用字幕提取功能</p>
+                                    <button class="btn" onclick="document.getElementById('loginButton').click()">立即登录</button>
+                                </div>
+                                
+                                <div class="upload-area" id="uploadArea">
+                                    <div class="upload-icon">📁</div>
+                                    <div class="upload-text">点击此处选择文件上传</div>
+                                    <div class="upload-hint">支持格式: MP4, AVI, MOV, MKV, WMV, FLV, WEBM, MP3, WAV, M4A, AAC, OGG, FLAC</div>
+                                    <input type="file" id="fileInput" class="file-input" accept=".mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.mp3,.wav,.m4a,.aac,.ogg,.flac">
+                                </div>
 
-                <div class="options" id="options">
-                    <div class="option-group">
-                        <label for="outputFormat">输出格式:</label>
-                        <select id="outputFormat">
-                            <option value="srt">SRT 格式</option>
-                            <option value="vtt">VTT 格式</option>
-                        </select>
-                    </div>
-                    <div class="option-group">
-                        <label for="language">识别语言:</label>
-                        <select id="language">
-                            <option value="zh">中文</option>
-                            <option value="en">英文</option>
-                            <option value="ja">日文</option>
-                            <option value="ko">韩文</option>
-                            <option value="auto">自动检测</option>
-                        </select>
-                    </div>
-                </div>
+                                <div class="options" id="options">
+                                    <div class="option-group">
+                                        <label for="outputFormat">输出格式:</label>
+                                        <select id="outputFormat">
+                                            <option value="srt">SRT 格式</option>
+                                            <option value="vtt">VTT 格式</option>
+                                        </select>
+                                    </div>
+                                    <div class="option-group">
+                                        <label for="language">识别语言:</label>
+                                        <select id="language">
+                                            <option value="zh">中文</option>
+                                            <option value="en">英文</option>
+                                            <option value="ja">日文</option>
+                                            <option value="ko">韩文</option>
+                                            <option value="auto">自动检测</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
                             </div>
                         </div>
                 </div>
@@ -510,6 +596,11 @@
             </div>
         </div>
     </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
     <script>
         let uploadedFilePath = null;
@@ -690,7 +781,7 @@
             downloadUrl = null;
             downloadFilename = null;
             document.getElementById('result').style.display = 'none';
-            document.getElementById('options').style.display = 'none';
+            // 保持options始终显示
 
             showStatus('正在上传文件...', 'info');
 
@@ -714,7 +805,7 @@
                     uploadedFilePath = data.file_path;
                     useR2Storage = data.use_r2 || false;
                     showStatus(`文件上传成功: ${data.original_filename}`, 'success');
-                    document.getElementById('options').style.display = 'block';
+                    // 选项区域已经默认显示，无需再次设置
                 } else {
                     showStatus(data.message, 'error');
                 }
@@ -876,9 +967,9 @@
             downloadUrl = null;
             downloadFilename = null;
             
-            // 隐藏结果区域和选项区域
+            // 隐藏结果区域，保持选项区域显示
             document.getElementById('result').style.display = 'none';
-            document.getElementById('options').style.display = 'none';
+            // options保持显示，用户可以预先选择格式和语言
             
             // 清空文件输入
             document.getElementById('fileInput').value = '';

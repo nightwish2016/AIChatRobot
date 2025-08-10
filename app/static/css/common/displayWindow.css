@@ -142,6 +142,29 @@ html, body {
     border-top: 1px solid #e5e7eb;
 }
 
+/* 移动端侧边栏底部适配 - 应用到所有页面 */
+@media (max-width: 768px) {
+    .sidebar-footer,
+    .app-layout .sidebar-footer,
+    .sidebar .sidebar-footer {
+        padding-bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important;
+        margin-bottom: env(safe-area-inset-bottom, 0px);
+        /* 确保在有导航栏的设备上也有足够的间距 */
+        min-height: 80px;
+        box-sizing: border-box;
+    }
+    
+    /* 针对可能有虚拟导航栏的Android设备 */
+    @supports not (padding: max(0px)) {
+        .sidebar-footer,
+        .app-layout .sidebar-footer,
+        .sidebar .sidebar-footer {
+            padding-bottom: 60px !important; /* 为没有安全区域支持的设备提供固定间距 */
+        }
+    }
+    
+}
+
 .main-content {
     flex: 1;
     display: flex;
@@ -152,22 +175,22 @@ html, body {
     -webkit-backdrop-filter: blur(20px);
     border-radius: 16px 0 0 0;
     margin-left: -16px;
-    padding: 0 20px 20px 36px;
+    padding: 20px 20px 20px 36px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
 }
 
 .top-bar {
-    height: 70px;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    display: flex;
+    height: 0px;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
+    display: none;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
-    border-radius: 20px 0 0 0;
-    overflow: visible;
+    padding: 0;
+    border-radius: 0;
+    overflow: hidden;
     position: relative;
     z-index: 100;
 }
@@ -196,6 +219,35 @@ html, body {
     cursor: pointer;
     font-size: 18px;
     color: #6b7280;
+}
+
+/* 移动端显示浮动菜单按钮 */
+.mobile-menu-float {
+    position: fixed;
+    top: calc(20px + env(safe-area-inset-top, 20px));
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(229, 231, 235, 0.3);
+    border-radius: 12px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 20px;
+    color: #667eea;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-float:hover {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
 }
 
 /* 移除多余的容器样式，直接使用main-content布局 */
@@ -507,10 +559,27 @@ select:focus {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+    .app-layout {
+        flex-direction: column;
+        height: 100vh;
+    }
+    
     .main-content {
-        padding: 0 12px calc(12px + env(safe-area-inset-bottom, 20px)) 28px;
+        padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 20px)) 12px;
         border-radius: 0;
         margin-left: 0;
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+    }
+    
+    .top-bar {
+        border-radius: 0;
+        position: static;
+        top: 0;
+        z-index: 200;
+        display: none;
+        height: 0;
     }
     
     #history {
@@ -543,6 +612,8 @@ select:focus {
     
     .input-section {
         padding: 15px 20px;
+        padding-bottom: calc(25px + env(safe-area-inset-bottom, 30px));
+        margin-bottom: env(safe-area-inset-bottom, 10px);
     }
     
     #prompt {
@@ -551,30 +622,40 @@ select:focus {
     }
     
     .controls {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
         gap: 10px;
+        flex-wrap: wrap;
     }
     
     .select-group {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 5px;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
     }
     
     .select-group label {
         text-align: left;
+        white-space: nowrap;
+        font-size: 13px;
     }
     
     select {
         min-width: auto;
         width: 100%;
+        flex: 1;
+        min-width: 100px;
     }
     
     button {
-        padding: 10px 20px;
+        padding: 12px 24px;
         font-size: 14px;
-        width: 100%;
+        min-height: 48px;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
     
     .user-input, .chatgpt-output {
@@ -585,23 +666,71 @@ select:focus {
 }
 
 @media (max-width: 480px) {
-    .upMenu {
+    .app-layout {
+        height: 100vh;
+        height: calc(var(--vh, 1vh) * 100);
+    }
+    
+    .main-content {
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 20px)) 8px;
+    }
+    
+    .top-bar {
+        padding: 0;
+        height: 0px;
+        min-height: 0px;
+        display: none;
+    }
+    
+    .top-bar .left-section span {
+        display: none;
+    }
+    
+    .controls {
         flex-direction: column;
-        gap: 15px;
-        text-align: center;
+        gap: 12px;
+    }
+    
+    .select-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+    
+    button {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 16px;
+    }
+    
+    #history {
+        padding: 8px 0;
+    }
+    
+    .user-input, .chatgpt-output {
+        margin-left: 2%;
+        margin-right: 2%;
+        padding: 16px;
+        font-size: 15px;
+        line-height: 1.6;
     }
     
     .otherUrl {
         justify-content: center;
+        flex-wrap: wrap;
     }
     
-    #history {
-        padding: 15px;
+    .otherUrl a {
+        font-size: 13px;
+        padding: 8px 12px;
     }
     
-    .user-input, .chatgpt-output {
-        margin-left: 5%;
-        margin-right: 5%;
+    /* 小屏幕设备侧边栏底部额外适配 */
+    .sidebar-footer,
+    .app-layout .sidebar-footer,
+    .sidebar .sidebar-footer {
+        padding-bottom: calc(30px + env(safe-area-inset-bottom, 30px)) !important;
+        min-height: 90px !important;
     }
 }
 
@@ -618,6 +747,8 @@ select:focus {
     
     .input-section {
         padding: 20px 25px;
+        padding-bottom: calc(30px + env(safe-area-inset-bottom, 35px));
+        margin-bottom: env(safe-area-inset-bottom, 15px);
     }
 }
 
@@ -643,16 +774,31 @@ select:focus {
         top: 0;
         left: 0;
         height: 100vh;
+        height: calc(var(--vh, 1vh) * 100);
         z-index: 1000;
         transform: translateX(-100%);
+        box-sizing: border-box;
+        /* 确保整个侧边栏有足够的底部空间 */
+        padding-bottom: calc(env(safe-area-inset-bottom, 10px) + 10px);
     }
     
     .sidebar.open {
         transform: translateX(0);
     }
     
-    .mobile-menu-btn {
+    .mobile-menu-float {
         display: flex;
+    }
+    
+    /* 小屏幕设备特殊处理 */
+    @media (max-width: 480px) {
+        .mobile-menu-float {
+            top: calc(15px + env(safe-area-inset-top, 15px));
+            right: 15px;
+            width: 44px;
+            height: 44px;
+            font-size: 18px;
+        }
     }
     
     .sidebar-overlay {
