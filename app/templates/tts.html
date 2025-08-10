@@ -502,16 +502,21 @@
                 </div>
                 
                 <div class="right-section">
-                    <!-- 右上角登录/注册按钮（移动端未登录时显示） -->
+                    <!-- 右上角登录/注册按钮（未登录时显示） -->
                     <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
                         <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
-                                style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                class="topbar-auth-btn topbar-login-btn">
                             登录
                         </button>
                         <button onclick="window.location.href='/register'" 
-                                style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                class="topbar-auth-btn topbar-register-btn">
                             注册
                         </button>
+                    </div>
+                    
+                    <!-- 已登录时显示用户信息 -->
+                    <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
+                        <span id="topbar-welcome-text" style="font-size: 14px; color: #555;">欢迎!</span>
                     </div>
                 </div>
             </div>
@@ -706,21 +711,35 @@
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
+            const mobileMenuFloat = document.querySelector('.mobile-menu-float');
             
             sidebar.classList.toggle('open');
             if (sidebar.classList.contains('open')) {
                 overlay.classList.add('show');
+                // 隐藏汉堡菜单按钮
+                if (mobileMenuFloat) {
+                    mobileMenuFloat.classList.add('hidden');
+                }
             } else {
                 overlay.classList.remove('show');
+                // 显示汉堡菜单按钮
+                if (mobileMenuFloat) {
+                    mobileMenuFloat.classList.remove('hidden');
+                }
             }
         }
         
         function closeSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
+            const mobileMenuFloat = document.querySelector('.mobile-menu-float');
             
             sidebar.classList.remove('open');
             overlay.classList.remove('show');
+            // 显示汉堡菜单按钮
+            if (mobileMenuFloat) {
+                mobileMenuFloat.classList.remove('hidden');
+            }
         }
         
         // 用户弹窗控制
@@ -752,6 +771,7 @@
                 const sidebarUsernameText = document.getElementById('sidebar-username-text');
                 
                 // 顶部栏元素
+                const topBar = document.getElementById('top-bar');
                 const topbarAuthButtons = document.getElementById('topbar-auth-buttons');
                 const topbarUserInfo = document.getElementById('topbar-user-info');
                 const topbarWelcomeText = document.getElementById('topbar-welcome-text');
@@ -763,9 +783,8 @@
                     if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
                     if (sidebarUsername) sidebarUsername.style.display = 'flex';
                     
-                    // 隐藏顶部栏登录/注册按钮，显示用户信息
-                    if (topbarAuthButtons) topbarAuthButtons.style.display = 'none';
-                    if (topbarUserInfo) topbarUserInfo.style.display = 'flex';
+                    // 隐藏整个顶部栏
+                    if (topBar) topBar.style.display = 'none';
                     
                     // 更新用户名显示
                     if (loginData.user_name) {
@@ -783,7 +802,8 @@
                     if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
                     if (sidebarUsername) sidebarUsername.style.display = 'none';
                     
-                    // 显示顶部栏登录/注册按钮，隐藏用户信息
+                    // 显示顶部栏和登录/注册按钮
+                    if (topBar) topBar.style.display = 'flex';
                     if (topbarAuthButtons) topbarAuthButtons.style.display = 'flex';
                     if (topbarUserInfo) topbarUserInfo.style.display = 'none';
                 }
