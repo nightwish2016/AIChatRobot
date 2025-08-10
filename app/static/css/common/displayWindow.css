@@ -180,19 +180,20 @@ html, body {
 }
 
 .top-bar {
-    height: 0px;
-    background: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border-bottom: none;
-    display: none;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(229, 231, 235, 0.3);
+    display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0;
+    padding: 0 20px;
     border-radius: 0;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
     z-index: 100;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .top-bar .left-section {
@@ -205,6 +206,41 @@ html, body {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+/* 顶部栏认证按钮样式 */
+.topbar-auth-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.topbar-login-btn {
+    background: #667eea;
+    color: white;
+}
+
+.topbar-login-btn:hover {
+    background: #5a6fd8;
+    transform: translateY(-1px);
+}
+
+.topbar-register-btn {
+    background: #10b981;
+    color: white;
+}
+
+.topbar-register-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
 }
 
 .mobile-menu-btn {
@@ -225,7 +261,7 @@ html, body {
 .mobile-menu-float {
     position: fixed;
     top: calc(20px + env(safe-area-inset-top, 20px));
-    right: 20px;
+    left: 20px;
     width: 48px;
     height: 48px;
     background: rgba(255, 255, 255, 0.95);
@@ -248,6 +284,13 @@ html, body {
     background: rgba(255, 255, 255, 1);
     box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
     transform: translateY(-2px);
+}
+
+/* 当侧边栏打开时隐藏汉堡菜单按钮 */
+.mobile-menu-float.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-20px);
 }
 
 /* 移除多余的容器样式，直接使用main-content布局 */
@@ -578,8 +621,9 @@ select:focus {
         position: static;
         top: 0;
         z-index: 200;
-        display: none;
-        height: 0;
+        display: flex;
+        height: 50px;
+        padding: 0 15px;
     }
     
     #history {
@@ -676,10 +720,15 @@ select:focus {
     }
     
     .top-bar {
-        padding: 0;
-        height: 0px;
-        min-height: 0px;
-        display: none;
+        padding: 0 12px;
+        height: 45px;
+        min-height: 45px;
+        display: flex;
+    }
+    
+    .topbar-auth-btn {
+        padding: 6px 12px;
+        font-size: 13px;
     }
     
     .top-bar .left-section span {
@@ -794,7 +843,7 @@ select:focus {
     @media (max-width: 480px) {
         .mobile-menu-float {
             top: calc(15px + env(safe-area-inset-top, 15px));
-            right: 15px;
+            left: 15px;
             width: 44px;
             height: 44px;
             font-size: 18px;
