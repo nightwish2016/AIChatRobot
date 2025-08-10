@@ -59,13 +59,131 @@
             background: #d0d0d0;
         }
         
-        /* 模型选择器样式 - 移动到顶部区域 */
-        .model-selector-bar {
+        /* 侧边栏汉堡菜单样式 */
+        .sidebar-toggle-btn {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            padding: 0;
+            border-radius: 6px;
+            transition: background-color 0.15s ease;
+        }
+        
+        .sidebar-toggle-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .hamburger-line {
+            width: 18px;
+            height: 2px;
+            background: #5f6368;
+            border-radius: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        /* 收缩状态的侧边栏 */
+        .sidebar.collapsed {
+            width: 64px;
+        }
+        
+        /* 收缩时隐藏所有菜单内容，只保留汉堡菜单 */
+        .sidebar.collapsed .sidebar-nav,
+        .sidebar.collapsed .sidebar-footer {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        
+        /* 确保汉堡菜单在收缩时仍然可见和可点击 */
+        .sidebar.collapsed .sidebar-toggle-btn {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        
+        /* 动画过渡 */
+        .sidebar {
+            transition: width 0.3s ease;
+        }
+        
+        .sidebar-nav,
+        .sidebar-footer {
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        
+        .sidebar-title {
+            transition: opacity 0.2s ease;
+        }
+        
+        .nav-item .text {
+            transition: opacity 0.2s ease;
+        }
+        
+        /* 统一顶部栏样式 - Gemini风格 */
+        .unified-top-bar {
             position: fixed;
-            top: calc(15px + env(safe-area-inset-top, 15px)); /* 调整与top-bar对齐 */
-            left: 50%; /* 居中定位 */
-            transform: translateX(-50%); /* 水平居中 */
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #ffffff;
+            border-bottom: 1px solid #e8eaed;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
             z-index: 1000;
+            box-shadow: none;
+        }
+        
+        .top-left, .top-center, .top-right {
+            display: flex;
+            align-items: center;
+        }
+        
+        .top-left {
+            flex: 0 0 auto;
+            margin-right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* 顶部栏标题样式 */
+        .topbar-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a73e8;
+            margin: 0;
+            letter-spacing: -0.3px;
+            display: none; /* 默认隐藏，桌面端显示 */
+        }
+        
+        .top-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .top-right {
+            flex: 0 0 auto;
+            margin-left: 20px;
+            gap: 12px;
+        }
+        
+        /* 模型选择器样式 - 在统一顶部栏中 */
+        .model-selector-bar {
+            position: relative;
             padding: 0;
             border: none;
             margin: 0;
@@ -81,33 +199,33 @@
             position: relative;
         }
         
+        /* Gemini风格模型选择器 */
         .model-selector-btn {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(229, 231, 235, 0.3);
-            border-radius: 6px; /* 与登录按钮保持一致的圆角 */
-            padding: 8px 16px; /* 与登录按钮保持一致的padding */
-            color: #334155;
+            background: #f8f9fa;
+            border: 1px solid #dadce0;
+            border-radius: 24px;
+            padding: 8px 16px;
+            color: #3c4043;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.15s ease;
             min-width: 140px;
             justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            height: 30px; /* 与登录按钮高度对齐 */
+            height: 36px;
             box-sizing: border-box;
         }
         
         .model-selector-btn:hover {
-            background: rgba(255, 255, 255, 1);
-            border-color: rgba(102, 126, 234, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
+            background: #f1f3f4;
+            border-color: #dadce0;
+        }
+        
+        .model-selector-btn:active {
+            background: #e8eaed;
         }
         
         .model-selector-btn svg {
@@ -119,11 +237,54 @@
             transform: rotate(180deg);
         }
         
-        /* 当侧边栏打开时隐藏模型选择器 */
-        .model-selector-bar.hidden {
+        /* 当侧边栏打开时隐藏整个统一顶部栏 */
+        .unified-top-bar.hidden {
             opacity: 0;
             visibility: hidden;
-            transform: translateX(-20px);
+            transform: translateY(-10px);
+        }
+        
+        
+        /* Google/Gemini风格按钮 */
+        .unified-top-bar .topbar-auth-btn {
+            height: 36px;
+            border-radius: 20px;
+            padding: 8px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #dadce0;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        
+        .unified-top-bar .topbar-login-btn {
+            background: #ffffff;
+            color: #3c4043;
+        }
+        
+        .unified-top-bar .topbar-login-btn:hover {
+            background: #f8f9fa;
+            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.15);
+        }
+        
+        .unified-top-bar .topbar-register-btn {
+            background: #1a73e8;
+            color: #ffffff;
+            border-color: #1a73e8;
+        }
+        
+        .unified-top-bar .topbar-register-btn:hover {
+            background: #1765cc;
+            border-color: #1765cc;
+            box-shadow: 0 1px 3px rgba(26, 115, 232, 0.4);
+        }
+        
+        .unified-top-bar .topbar-auth-btn:active {
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
         }
         
         .model-name {
@@ -201,6 +362,31 @@
             font-weight: 400;
         }
         
+        /* 主内容区域适配 - 为固定顶部栏留出空间 */
+        .main-content {
+            margin-top: 60px; /* 为统一顶部栏留出空间 */
+        }
+        
+        /* 桌面端适配 - 侧边栏显示时 */
+        @media (min-width: 769px) {
+            .unified-top-bar {
+                left: 280px; /* 给左侧菜单栏留出空间 */
+                transition: left 0.3s ease;
+            }
+            
+            .unified-top-bar.sidebar-collapsed {
+                left: 64px; /* 收缩时调整顶部栏位置 */
+            }
+            
+            .topbar-title {
+                display: block; /* 桌面端显示标题 */
+            }
+            
+            .mobile-hamburger-btn {
+                display: none; /* 桌面端隐藏移动端汉堡菜单 */
+            }
+        }
+        
         /* 平板设备适配 */
         @media (max-width: 1024px) {
             /* 平板和移动端都隐藏注册按钮 */
@@ -209,22 +395,74 @@
             }
         }
         
+        /* 移动端汉堡菜单按钮 */
+        .mobile-hamburger-btn {
+            width: 36px;
+            height: 36px;
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            display: none; /* 默认隐藏，只在移动端显示 */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: #5f6368;
+            transition: background-color 0.15s ease;
+        }
+        
+        .mobile-hamburger-btn:hover {
+            background: #f1f3f4;
+        }
+        
         /* 移动端适配 */
         @media (max-width: 768px) {
-            .model-selector-bar {
-                position: fixed;
-                top: calc(12px + env(safe-area-inset-top, 12px)); /* 调整移动端对齐 */
-                left: 50%; /* 居中定位 */
-                transform: translateX(-50%); /* 水平居中 */
-                right: auto;
+            .unified-top-bar {
+                left: 0; /* 移动端占满全宽 */
+                height: 56px;
+                padding: 0 16px;
+            }
+            
+            .main-content {
+                margin-top: 56px; /* 调整移动端顶部间距 */
+            }
+            
+            .top-left {
+                margin-right: 12px;
+            }
+            
+            .top-right {
+                margin-left: 12px;
+                gap: 8px;
+            }
+            
+            /* 移动端显示汉堡菜单按钮 */
+            .mobile-hamburger-btn {
+                display: flex;
+            }
+            
+            /* 移动端隐藏顶部栏标题 */
+            .topbar-title {
+                display: none;
+            }
+            
+            /* 隐藏侧边栏的汉堡菜单按钮 */
+            .sidebar-toggle-btn {
+                display: none;
             }
             
             .model-selector-btn {
-                min-width: 100px;
-                padding: 6px 12px; /* 与移动端登录按钮对齐 */
+                min-width: 120px;
+                padding: 6px 12px;
                 font-size: 13px;
-                box-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
-                height: 26px; /* 调整移动端高度 */
+                height: 32px;
+            }
+            
+            .unified-top-bar .topbar-auth-btn {
+                height: 32px;
+                padding: 6px 16px;
+                font-size: 13px;
+                border-radius: 16px;
             }
             
             .model-dropdown {
@@ -233,18 +471,44 @@
         }
         
         @media (max-width: 480px) {
-            .model-selector-bar {
-                position: fixed;
-                top: calc(10px + env(safe-area-inset-top, 10px)); /* 小屏幕对齐调整 */
-                left: 50%; /* 居中定位 */
-                transform: translateX(-50%); /* 水平居中 */
+            .unified-top-bar {
+                left: 0; /* 小屏幕也占满全宽 */
+                height: 52px;
+                padding: 0 12px;
+            }
+            
+            .main-content {
+                margin-top: 52px; /* 调整小屏幕顶部间距 */
+            }
+            
+            .top-left {
+                margin-right: 8px;
+            }
+            
+            .top-right {
+                margin-left: 8px;
+                gap: 6px;
+            }
+            
+            .mobile-hamburger-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
             }
             
             .model-selector-btn {
-                min-width: 90px;
-                padding: 6px 12px; /* 与小屏幕登录按钮对齐 */
+                min-width: 100px;
+                padding: 4px 8px;
                 font-size: 12px;
-                height: 26px; /* 保持一致高度 */
+                height: 28px;
+                border-radius: 14px;
+            }
+            
+            .unified-top-bar .topbar-auth-btn {
+                height: 28px;
+                padding: 4px 12px;
+                font-size: 12px;
+                border-radius: 14px;
             }
         }
         
@@ -672,7 +936,12 @@
         <!-- 左侧菜单栏 -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2 class="sidebar-title">Toolify AI</h2>
+                <!-- 汉堡菜单按钮 - 用于收缩/展开侧边栏 -->
+                <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarCollapse()">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
             </div>
             
             <nav class="sidebar-nav">
@@ -712,41 +981,17 @@
         <!-- 移动端遮罩层 -->
         <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
         
-        <!-- 移动端浮动菜单按钮 -->
-        <button class="mobile-menu-float" onclick="toggleSidebar()">☰</button>
-        
-        <!-- 主内容区域 -->
-        <div class="main-content">
-            <!-- 隐藏的顶部栏 - 仅在移动端未登录时显示 -->
-            <div class="top-bar" id="top-bar" style="display: none;">
-                <div class="left-section">
-                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
-                        ☰
-                    </button>
-                </div>
-                
-                <div class="right-section">
-                    <!-- 右上角登录/注册按钮（未登录时显示） -->
-                    <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
-                        <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
-                                class="topbar-auth-btn topbar-login-btn">
-                            登录
-                        </button>
-                        <button onclick="window.location.href='/register'" 
-                                class="topbar-auth-btn topbar-register-btn">
-                            注册
-                        </button>
-                    </div>
-                    
-                    <!-- 已登录时显示用户信息 -->
-                    <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
-                        <span id="topbar-welcome-text" style="font-size: 14px; color: #555;">欢迎!</span>
-                    </div>
-                </div>
+        <!-- 统一顶部栏 - 包含所有顶部元素 -->
+        <div class="unified-top-bar" id="unified-top-bar">
+            <!-- 左侧：Toolify AI 标题和移动端汉堡菜单 -->
+            <div class="top-left">
+                <button class="mobile-hamburger-btn" onclick="toggleSidebar()">☰</button>
+                <h1 class="topbar-title">Toolify AI</h1>
             </div>
             
-            <!-- 模型选择器移至聊天区域顶部 -->
-            <div class="model-selector-bar">
+            <!-- 中间：模型选择器 -->
+            <div class="top-center">
+                <div class="model-selector-bar">
                 <div class="model-selector-container">
                     <div class="model-selector-dropdown">
                         <button class="model-selector-btn" id="model-selector-btn" onclick="toggleModelDropdown()">
@@ -777,8 +1022,32 @@
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
             
+            <!-- 右侧：登录注册按钮 -->
+            <div class="top-right">
+                <!-- 右上角登录/注册按钮（未登录时显示） -->
+                <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
+                    <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
+                            class="topbar-auth-btn topbar-login-btn">
+                        登录
+                    </button>
+                    <button onclick="window.location.href='/register'" 
+                            class="topbar-auth-btn topbar-register-btn">
+                        注册
+                    </button>
+                </div>
+                
+                <!-- 已登录时显示用户信息 -->
+                <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
+                    <span id="topbar-welcome-text" style="font-size: 14px; color: #555;">欢迎!</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
             <!-- 聊天历史记录 -->
             <div id="history"></div>
             <div id="guidDisplay" style="display: none;"></div>      
@@ -884,33 +1153,39 @@
     </div>
 		
     <script>
+        // 侧边栏收缩/展开控制
+        function toggleSidebarCollapse() {
+            const sidebar = document.getElementById('sidebar');
+            const topBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            // 同时调整顶部栏位置
+            if (sidebar.classList.contains('collapsed')) {
+                topBar.classList.add('sidebar-collapsed');
+            } else {
+                topBar.classList.remove('sidebar-collapsed');
+            }
+        }
+        
         // 移动端侧边栏控制
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
-            const mobileMenuFloat = document.querySelector('.mobile-menu-float');
-            const modelSelectorBar = document.querySelector('.model-selector-bar');
+            const unifiedTopBar = document.querySelector('.unified-top-bar');
             
             sidebar.classList.toggle('open');
             if (sidebar.classList.contains('open')) {
                 overlay.classList.add('show');
-                // 隐藏汉堡菜单按钮
-                if (mobileMenuFloat) {
-                    mobileMenuFloat.classList.add('hidden');
-                }
-                // 隐藏模型选择器
-                if (modelSelectorBar) {
-                    modelSelectorBar.classList.add('hidden');
+                // 隐藏统一顶部栏
+                if (unifiedTopBar) {
+                    unifiedTopBar.classList.add('hidden');
                 }
             } else {
                 overlay.classList.remove('show');
-                // 显示汉堡菜单按钮
-                if (mobileMenuFloat) {
-                    mobileMenuFloat.classList.remove('hidden');
-                }
-                // 显示模型选择器
-                if (modelSelectorBar) {
-                    modelSelectorBar.classList.remove('hidden');
+                // 显示统一顶部栏
+                if (unifiedTopBar) {
+                    unifiedTopBar.classList.remove('hidden');
                 }
             }
         }
@@ -918,18 +1193,13 @@
         function closeSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
-            const mobileMenuFloat = document.querySelector('.mobile-menu-float');
-            const modelSelectorBar = document.querySelector('.model-selector-bar');
+            const unifiedTopBar = document.querySelector('.unified-top-bar');
             
             sidebar.classList.remove('open');
             overlay.classList.remove('show');
-            // 显示汉堡菜单按钮
-            if (mobileMenuFloat) {
-                mobileMenuFloat.classList.remove('hidden');
-            }
-            // 显示模型选择器
-            if (modelSelectorBar) {
-                modelSelectorBar.classList.remove('hidden');
+            // 显示统一顶部栏
+            if (unifiedTopBar) {
+                unifiedTopBar.classList.remove('hidden');
             }
         }
         
