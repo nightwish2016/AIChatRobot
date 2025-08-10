@@ -66,6 +66,9 @@ async function ChatReuqest(prompt,model,guid) {
     };
     
     console.log('发送的数据:', data);
+    
+    // 不预先添加响应元素，等有内容时再添加
+    
     fetch(url,{
         method: 'POST',           // 指定使用 POST 方法
         headers: {
@@ -75,6 +78,8 @@ async function ChatReuqest(prompt,model,guid) {
     }).then(response => {
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
+        let processingCleared = false; // 标记是否已清理处理中的提示
+        let responseBoxAdded = false; // 标记响应框是否已添加到DOM
      
         function processStream() {
             reader.read().then(({ done, value }) => {
@@ -87,10 +92,13 @@ async function ChatReuqest(prompt,model,guid) {
                 // 更新页面内容
                 //container.textContent += text;
 
-                clearInterval(processingInterval); // 停止显示处理中的点
-                processingOutput.remove(); // 删除处理中的提示  
+                // 只在第一次接收到数据时清理处理中的提示并添加响应框
+                if (!processingCleared) {
+                    clearInterval(processingInterval); // 停止显示处理中的点
+                    processingOutput.remove(); // 删除处理中的提示
+                    processingCleared = true;
+                }
 
-                
                 s+=text;
                // console.log('Received s', s);
                 //chatgptOutput.innerHTML+=text;
@@ -98,11 +106,19 @@ async function ChatReuqest(prompt,model,guid) {
                 let text2=marked.parse(s);
                 //console.log('Received text2:', text2)
 
+                // 只在第一次有实际内容时添加响应框到DOM
+                if (!responseBoxAdded && s.trim().length > 0) {
+                    historyField.appendChild(chatgptOutput);
+                    responseBoxAdded = true;
+                }
 
+                // 只更新内容，不重复添加到DOM
                 chatgptOutput.innerHTML=text2
                 hljs.highlightAll();
-                historyField.appendChild(chatgptOutput);
-                // historyField.scrollTop = historyField.scrollHeight;
+                
+                // 确保页面滚动到底部
+                historyField.scrollTop = historyField.scrollHeight;
+                
                 // 递归调用以继续读取数据
                 processStream();
             }).catch(error => {
