@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>AI Chat Assistant</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/atom-one-dark.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
@@ -57,6 +57,144 @@
         
         .toggle-btn:active {
             background: #d0d0d0;
+        }
+        
+        /* 模型选择器样式 - 类似Gemini */
+        .model-selector-container {
+            margin-left: 24px;
+            position: relative;
+            z-index: 150;
+        }
+        
+        .model-selector-dropdown {
+            position: relative;
+        }
+        
+        .model-selector-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #334155;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            min-width: 140px;
+            justify-content: space-between;
+        }
+        
+        .model-selector-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(102, 126, 234, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .model-selector-btn svg {
+            transition: transform 0.2s ease;
+            opacity: 0.7;
+        }
+        
+        .model-selector-btn.active svg {
+            transform: rotate(180deg);
+        }
+        
+        .model-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .model-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+            z-index: 9999;
+            display: none;
+            overflow: hidden;
+            min-width: 250px;
+        }
+        
+        .model-dropdown.show {
+            display: block;
+            animation: dropdownSlide 0.3s ease-out;
+        }
+        
+        @keyframes dropdownSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .model-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .model-option:last-child {
+            border-bottom: none;
+        }
+        
+        .model-option:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .model-option.selected {
+            background: rgba(102, 126, 234, 0.15);
+        }
+        
+        .model-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .model-title {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+        }
+        
+        .model-desc {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 400;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .model-selector-container {
+                margin-left: 12px;
+            }
+            
+            .model-selector-btn {
+                min-width: 100px;
+                padding: 6px 10px;
+                font-size: 13px;
+            }
+            
+            .model-dropdown {
+                min-width: 200px;
+            }
         }
         
         /* 附件上传相关样式 - 优化版 */
@@ -295,7 +433,7 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             padding: 8px;
             min-width: 220px;
-            z-index: 1000;
+            z-index: 9999;
             opacity: 0;
             visibility: hidden;
             transform: translateY(10px) scale(0.95);
@@ -411,6 +549,30 @@
                 padding: 6px 10px 6px 6px;
                 gap: 6px;
                 min-height: 44px;
+                margin-bottom: env(safe-area-inset-bottom, 15px);
+            }
+            
+            /* iOS设备额外的底部安全间距 */
+            @supports (-webkit-touch-callout: none) {
+                .input-container {
+                    margin-bottom: calc(env(safe-area-inset-bottom, 15px) + 10px);
+                }
+                
+                .dropdown-menu {
+                    bottom: calc(90px + env(safe-area-inset-bottom, 25px)) !important;
+                }
+            }
+            
+            /* Android Chrome特殊处理 */
+            @media screen and (max-width: 768px) and (orientation: portrait) {
+                .input-container {
+                    padding-bottom: 8px;
+                }
+                
+                /* 为可能的导航栏添加额外空间 */
+                .main-content {
+                    padding-bottom: calc(20px + env(safe-area-inset-bottom, 15px)) !important;
+                }
             }
             
             .plus-button {
@@ -430,7 +592,7 @@
             .dropdown-menu {
                 min-width: 200px;
                 left: 6px;
-                bottom: 50px;
+                bottom: calc(80px + env(safe-area-inset-bottom, 20px));
             }
             
             .menu-item {
@@ -506,6 +668,37 @@
                         ☰
                     </button>
                     <span>Toolify AI</span>
+                    <!-- 模型选择器 - 类似Gemini的设计 -->
+                    <div class="model-selector-container">
+                        <div class="model-selector-dropdown">
+                            <button class="model-selector-btn" id="model-selector-btn" onclick="toggleModelDropdown()">
+                                <span class="model-name" id="current-model-name">DeepSeek</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6,9 12,15 18,9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="model-dropdown" id="model-dropdown">
+                                <div class="model-option" data-value="deepseek-chat" onclick="selectModel('deepseek-chat', 'DeepSeek')">
+                                    <div class="model-info">
+                                        <div class="model-title">DeepSeek</div>
+                                        <div class="model-desc">高性能对话模型</div>
+                                    </div>
+                                </div>
+                                <div class="model-option" data-value="gpt-4o-mini" onclick="selectModel('gpt-4o-mini', 'GPT-4O Mini')">
+                                    <div class="model-info">
+                                        <div class="model-title">GPT-4O Mini</div>
+                                        <div class="model-desc">快速响应模型</div>
+                                    </div>
+                                </div>
+                                <div class="model-option" data-value="gpt-4o" onclick="selectModel('gpt-4o', 'GPT-4O')">
+                                    <div class="model-info">
+                                        <div class="model-title">GPT-4O</div>
+                                        <div class="model-desc">最强大的AI模型</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="right-section">
@@ -529,15 +722,12 @@
                 </div>
             </div>
             
-            <!-- 聊天区域 -->
-            <div class="chat-area">
-                <div class="chat-container">
-                    <!-- 聊天历史记录 -->
-                    <div id="history"></div>
-                    <div id="guidDisplay" style="display: none;"></div>      
-                    
-                    <!-- 输入区域 -->
-                    <div class="input-section">
+            <!-- 聊天历史记录 -->
+            <div id="history"></div>
+            <div id="guidDisplay" style="display: none;"></div>      
+            
+            <!-- 输入区域 -->
+            <div class="input-section">
             <!-- 隐藏的原附件上传区域 -->
             <div class="attachment-section">
                 <div class="attachment-upload">
@@ -596,17 +786,13 @@
             </div>
             
             <div class="controls">
-                <div class="select-group">
-                    <label for="model-select">选择模型:</label>
-                    <select id="model-select"> 
-                        <option value="deepseek-chat">DeepSeek</option>            
-                        <option value="gpt-4o-mini">GPT-4O-mini</option>                                
-                        <option value="gpt-4o">GPT-4O</option>                                       
-                    </select>
-                </div>
+                <!-- 隐藏的模型选择器，用于兼容现有代码 -->
+                <select id="model-select" style="display: none;">
+                    <option value="deepseek-chat" selected>DeepSeek</option>
+                    <option value="gpt-4o-mini">GPT-4O-mini</option>
+                    <option value="gpt-4o">GPT-4O</option>
+                </select>
                 <button onclick="sendToChatGPT()">发送</button>
-                    </div>
-                </div>
             </div>
         </div>
         
@@ -666,7 +852,41 @@
         function toggleUserPopup() {
             const popup = document.getElementById('popup');
             if (popup) {
-                popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+                const isVisible = popup.style.display === 'block';
+                
+                if (!isVisible) {
+                    // 显示弹窗前，检查移动端安全区域
+                    adjustPopupForMobile(popup);
+                    popup.style.display = 'block';
+                } else {
+                    popup.style.display = 'none';
+                }
+            }
+        }
+        
+        // 移动端弹窗位置调整
+        function adjustPopupForMobile(popup) {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                const viewportHeight = window.innerHeight;
+                const popupHeight = popup.offsetHeight || 200; // 预估高度
+                const minBottomSpace = 80; // 最小底部空间
+                
+                // 如果视窗高度较小（可能键盘弹起），调整位置
+                if (viewportHeight < 600) {
+                    const dynamicBottom = Math.max(minBottomSpace, viewportHeight * 0.1);
+                    popup.style.bottom = `${dynamicBottom}px`;
+                } else {
+                    // 恢复默认位置（通过CSS设置）
+                    popup.style.bottom = '';
+                }
+                
+                // 确保弹窗不会超出屏幕顶部
+                if (popupHeight + minBottomSpace > viewportHeight * 0.8) {
+                    popup.style.maxHeight = `${viewportHeight * 0.6}px`;
+                    popup.style.overflowY = 'auto';
+                }
             }
         }    
         function generateGUID() {
@@ -747,6 +967,89 @@
         if (typeof loginButtonDisplayProcess === 'function') {
             loginButtonDisplayProcess();
         }
+        
+        // 模型选择器初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeModelSelector();
+        });
+        
+        // 模型选择器相关函数
+        function initializeModelSelector() {
+            // 设置默认选中的模型
+            updateSelectedModel();
+            
+            // 点击页面其他地方关闭下拉菜单
+            document.addEventListener('click', function(e) {
+                const dropdown = document.getElementById('model-dropdown');
+                const btn = document.getElementById('model-selector-btn');
+                if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+                    closeModelDropdown();
+                }
+            });
+        }
+        
+        function toggleModelDropdown() {
+            const dropdown = document.getElementById('model-dropdown');
+            const btn = document.getElementById('model-selector-btn');
+            
+            if (dropdown && btn) {
+                if (dropdown.classList.contains('show')) {
+                    closeModelDropdown();
+                } else {
+                    dropdown.classList.add('show');
+                    btn.classList.add('active');
+                }
+            }
+        }
+        
+        function closeModelDropdown() {
+            const dropdown = document.getElementById('model-dropdown');
+            const btn = document.getElementById('model-selector-btn');
+            
+            if (dropdown) dropdown.classList.remove('show');
+            if (btn) btn.classList.remove('active');
+        }
+        
+        function selectModel(value, name) {
+            // 更新显示的模型名称
+            const modelNameEl = document.getElementById('current-model-name');
+            if (modelNameEl) {
+                modelNameEl.textContent = name;
+            }
+            
+            // 更新隐藏的select元素
+            const hiddenSelect = document.getElementById('model-select');
+            if (hiddenSelect) {
+                hiddenSelect.value = value;
+            }
+            
+            // 更新全局变量
+            window.currentModel = value;
+            
+            // 更新选中状态
+            updateSelectedModel(value);
+            
+            // 关闭下拉菜单
+            closeModelDropdown();
+            
+            console.log('选择了模型:', value, name);
+        }
+        
+        function updateSelectedModel(selectedValue = 'deepseek-chat') {
+            // 移除所有选中状态
+            document.querySelectorAll('.model-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // 添加当前选中状态
+            const selectedOption = document.querySelector(`[data-value="${selectedValue}"]`);
+            if (selectedOption) {
+                selectedOption.classList.add('selected');
+            }
+        }
+        
+        // 确保全局变量初始化
+        window.currentModel = 'deepseek-chat';
   
         let historyField = document.getElementById('history');
         sendRequestByEnter('prompt','keydown')
@@ -788,6 +1091,50 @@
         
         // 初始化高度
         autoResize(textarea);
+        
+        // 移动端浏览器导航栏适配
+        function handleMobileViewport() {
+            // 设置CSS自定义属性来处理视窗高度
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+            
+            // 检测是否为移动设备
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                // 监听视窗大小变化（键盘弹起时会触发）
+                let resizeTimer;
+                window.addEventListener('resize', function() {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(function() {
+                        const vh = window.innerHeight * 0.01;
+                        document.documentElement.style.setProperty('--vh', `${vh}px`);
+                        
+                        // 如果下拉菜单是打开的，重新计算位置
+                        const dropdownMenu = document.getElementById('dropdown-menu');
+                        if (dropdownMenu && dropdownMenu.classList.contains('show')) {
+                            // 确保菜单不会被键盘遮挡
+                            const menuHeight = dropdownMenu.offsetHeight;
+                            const viewportHeight = window.innerHeight;
+                            const minBottomSpace = 100; // 最小底部空间
+                            
+                            if (viewportHeight < 500) { // 可能是键盘弹起状态
+                                dropdownMenu.style.bottom = `${Math.max(minBottomSpace, viewportHeight * 0.15)}px`;
+                            }
+                        }
+                        
+                        // 如果用户弹窗是打开的，重新调整位置
+                        const popup = document.getElementById('popup');
+                        if (popup && popup.style.display === 'block') {
+                            adjustPopupForMobile(popup);
+                        }
+                    }, 100);
+                });
+            }
+        }
+        
+        // 初始化移动端适配
+        handleMobileViewport();
         
         // 新增：+按钮和弹出菜单功能
         const plusButton = document.getElementById('plus-button');

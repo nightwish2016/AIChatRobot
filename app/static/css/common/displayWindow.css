@@ -146,14 +146,14 @@ html, body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.9);
+    overflow: visible;
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-radius: 20px 0 0 0;
-    margin-left: -20px;
-    padding-left: 20px;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+    border-radius: 16px 0 0 0;
+    margin-left: -16px;
+    padding: 0 20px 20px 36px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
 }
 
 .top-bar {
@@ -167,6 +167,9 @@ html, body {
     justify-content: space-between;
     padding: 0 24px;
     border-radius: 20px 0 0 0;
+    overflow: visible;
+    position: relative;
+    z-index: 100;
 }
 
 .top-bar .left-section {
@@ -195,23 +198,7 @@ html, body {
     color: #6b7280;
 }
 
-.chat-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-/* 更新原有的聊天容器样式 */
-.chat-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 24px;
-    overflow: hidden;
-    height: 100%;
-    background: transparent;
-}
+/* 移除多余的容器样式，直接使用main-content布局 */
 
 /* 隐藏原来的顶部菜单 */
 .upMenu {
@@ -250,75 +237,65 @@ html, body {
     position: relative;
 }
 
-/* 历史记录区域 */
+/* 历史记录区域 - ChatGPT风格简洁设计 */
 #history {
     flex: 1;
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 16px;
+    background: transparent;
+    padding: 16px 0;
     overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    margin: 0 0 24px 0;
-    border-radius: 16px;
+    border: none;
+    margin: 0 0 16px 0;
+    border-radius: 0;
     scrollbar-width: thin;
-    scrollbar-color: rgba(102, 126, 234, 0.5) transparent;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    min-height: 0;
 }
 
 #history::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
 }
 
 #history::-webkit-scrollbar-track {
     background: transparent;
-    border-radius: 10px;
 }
 
 #history::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.6) 0%, rgba(118, 75, 162, 0.6) 100%);
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: content-box;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
 }
 
 #history::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
-    background-clip: content-box;
+    background: rgba(0, 0, 0, 0.3);
 }
 
-/* 输入区域 */
+/* 输入区域 - 优化布局 */
 .input-section {
-    padding: 0;
+    flex-shrink: 0;
     background: transparent;
     border-top: none;
-    flex-shrink: 0;
-    margin-top: auto;
 }
 
 #prompt {
     width: 100%;
-    padding: 18px 20px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 16px;
+    padding: 16px 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
     font-size: 16px;
     font-family: inherit;
     resize: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    margin-bottom: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
+    background: #ffffff;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     color: #1a202c;
+    line-height: 1.5;
 }
 
 #prompt:focus {
     outline: none;
-    border-color: rgba(102, 126, 234, 0.5);
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
-    transform: translateY(-2px);
+    border-color: #4285f4;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.15);
 }
 
 #prompt::placeholder {
@@ -326,12 +303,12 @@ html, body {
     font-weight: 400;
 }
 
-/* 控制器样式 */
+/* 控制器样式 - 简化设计 */
 .controls {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
 }
 
 .select-group {
@@ -530,11 +507,19 @@ select:focus {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .chat-container {
-        width: 100%;
-        height: 100vh;
-        margin: 0;
+    .main-content {
+        padding: 0 12px calc(12px + env(safe-area-inset-bottom, 20px)) 28px;
         border-radius: 0;
+        margin-left: 0;
+    }
+    
+    #history {
+        padding: 12px 0;
+    }
+    
+    #prompt {
+        padding: 14px 16px;
+        font-size: 16px;
     }
     
     .upMenu {
@@ -647,7 +632,7 @@ select:focus {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     padding: 20px;
     min-width: 200px;
-    z-index: 1001;
+    z-index: 10000;
     display: none;
 }
 
@@ -688,14 +673,26 @@ select:focus {
         visibility: visible;
     }
     
-    .chat-container {
-        padding: 15px;
-    }
-    
     #popup {
         left: 10px;
-        bottom: 70px;
+        bottom: calc(80px + env(safe-area-inset-bottom, 20px));
         min-width: 180px;
+    }
+    
+    /* iOS设备用户弹窗特殊处理 */
+    @supports (-webkit-touch-callout: none) {
+        #popup {
+            bottom: calc(90px + env(safe-area-inset-bottom, 25px)) !important;
+        }
+    }
+    
+    /* 横屏模式下的特殊处理 */
+    @media screen and (max-width: 768px) and (orientation: landscape) {
+        #popup {
+            bottom: calc(60px + env(safe-area-inset-bottom, 15px));
+            max-height: 40vh;
+            overflow-y: auto;
+        }
     }
 }
 
