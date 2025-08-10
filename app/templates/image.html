@@ -123,6 +123,14 @@
             flex: 1;
             min-width: 120px;
         }
+        
+        /* 平板设备适配 */
+        @media (max-width: 1024px) {
+            /* 平板和移动端都隐藏注册按钮 */
+            .topbar-register-btn {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>

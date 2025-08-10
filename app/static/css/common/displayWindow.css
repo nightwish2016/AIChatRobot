@@ -181,10 +181,8 @@ html, body {
 
 .top-bar {
     height: 60px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(229, 231, 235, 0.3);
+    background: transparent;
+    border-bottom: none;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -193,7 +191,6 @@ html, body {
     overflow: visible;
     position: relative;
     z-index: 100;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .top-bar .left-section {
@@ -245,39 +242,41 @@ html, body {
 
 .mobile-menu-btn {
     display: none;
-    width: 40px;
-    height: 40px;
+    width: 38px; /* 与mobile-menu-float保持一致 */
+    height: 26px; /* 与其他按钮高度保持一致 */
     background: #f3f4f6;
     border: 1px solid #d1d5db;
-    border-radius: 8px;
+    border-radius: 6px; /* 与其他按钮圆角保持一致 */
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 16px; /* 调整字体大小 */
     color: #6b7280;
+    box-sizing: border-box;
 }
 
 /* 移动端显示浮动菜单按钮 */
 .mobile-menu-float {
     position: fixed;
-    top: calc(20px + env(safe-area-inset-top, 20px));
+    top: calc(12px + env(safe-area-inset-top, 12px)); /* 与移动端模型选择器对齐 */
     left: 20px;
-    width: 48px;
-    height: 48px;
+    width: 38px; /* 调整宽度以匹配按钮高度 */
+    height: 26px; /* 与登录按钮高度对齐 */
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(229, 231, 235, 0.3);
-    border-radius: 12px;
+    border-radius: 6px; /* 与其他按钮保持一致的圆角 */
     display: none;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 20px;
+    font-size: 16px; /* 调整字体大小 */
     color: #667eea;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     z-index: 1001;
     transition: all 0.3s ease;
+    box-sizing: border-box;
 }
 
 .mobile-menu-float:hover {
@@ -842,11 +841,11 @@ select:focus {
     /* 小屏幕设备特殊处理 */
     @media (max-width: 480px) {
         .mobile-menu-float {
-            top: calc(15px + env(safe-area-inset-top, 15px));
+            top: calc(10px + env(safe-area-inset-top, 10px)); /* 与小屏幕模型选择器对齐 */
             left: 15px;
-            width: 44px;
-            height: 44px;
-            font-size: 18px;
+            width: 36px; /* 调整小屏幕宽度 */
+            height: 26px; /* 与其他按钮高度保持一致 */
+            font-size: 14px; /* 调整小屏幕字体大小 */
         }
     }
     

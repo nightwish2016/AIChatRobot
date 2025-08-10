@@ -62,8 +62,9 @@
         /* 模型选择器样式 - 移动到顶部区域 */
         .model-selector-bar {
             position: fixed;
-            top: calc(20px + env(safe-area-inset-top, 20px));
-            left: 80px; /* 汉堡菜单按钮右侧 */
+            top: calc(15px + env(safe-area-inset-top, 15px)); /* 调整与top-bar对齐 */
+            left: 50%; /* 居中定位 */
+            transform: translateX(-50%); /* 水平居中 */
             z-index: 1000;
             padding: 0;
             border: none;
@@ -86,8 +87,8 @@
             gap: 8px;
             background: rgba(255, 255, 255, 0.95);
             border: 1px solid rgba(229, 231, 235, 0.3);
-            border-radius: 12px;
-            padding: 8px 12px;
+            border-radius: 6px; /* 与登录按钮保持一致的圆角 */
+            padding: 8px 16px; /* 与登录按钮保持一致的padding */
             color: #334155;
             font-size: 14px;
             font-weight: 500;
@@ -98,6 +99,8 @@
             min-width: 140px;
             justify-content: space-between;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            height: 30px; /* 与登录按钮高度对齐 */
+            box-sizing: border-box;
         }
         
         .model-selector-btn:hover {
@@ -198,20 +201,30 @@
             font-weight: 400;
         }
         
+        /* 平板设备适配 */
+        @media (max-width: 1024px) {
+            /* 平板和移动端都隐藏注册按钮 */
+            .topbar-register-btn {
+                display: none !important;
+            }
+        }
+        
         /* 移动端适配 */
         @media (max-width: 768px) {
             .model-selector-bar {
                 position: fixed;
-                top: calc(20px + env(safe-area-inset-top, 20px));
-                left: 75px; /* 汉堡菜单按钮右侧 */
+                top: calc(12px + env(safe-area-inset-top, 12px)); /* 调整移动端对齐 */
+                left: 50%; /* 居中定位 */
+                transform: translateX(-50%); /* 水平居中 */
                 right: auto;
             }
             
             .model-selector-btn {
                 min-width: 100px;
-                padding: 6px 10px;
+                padding: 6px 12px; /* 与移动端登录按钮对齐 */
                 font-size: 13px;
                 box-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
+                height: 26px; /* 调整移动端高度 */
             }
             
             .model-dropdown {
@@ -222,14 +235,16 @@
         @media (max-width: 480px) {
             .model-selector-bar {
                 position: fixed;
-                top: calc(15px + env(safe-area-inset-top, 15px));
-                left: 65px; /* 小屏幕调整，为左上角按钮留空间 */
+                top: calc(10px + env(safe-area-inset-top, 10px)); /* 小屏幕对齐调整 */
+                left: 50%; /* 居中定位 */
+                transform: translateX(-50%); /* 水平居中 */
             }
             
             .model-selector-btn {
                 min-width: 90px;
-                padding: 5px 8px;
+                padding: 6px 12px; /* 与小屏幕登录按钮对齐 */
                 font-size: 12px;
+                height: 26px; /* 保持一致高度 */
             }
         }
         
