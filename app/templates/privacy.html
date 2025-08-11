@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>隐私政策 - Toolify AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/loginButton.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/displayWindow.css') }}">
+    <script src="{{ url_for('static', filename='js/common/loginButton.js') }}"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* 侧边栏汉堡菜单样式 */
+        .sidebar-toggle-btn {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            padding: 0;
+            border-radius: 6px;
+            transition: background-color 0.15s ease;
+        }
+        
+        .sidebar-toggle-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .hamburger-line {
+            width: 18px;
+            height: 2px;
+            background: #5f6368;
+            border-radius: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        /* 收缩状态的侧边栏 */
+        .sidebar.collapsed {
+            width: 64px;
+        }
+        
+        /* 收缩时隐藏所有菜单内容，只保留汉堡菜单 */
+        .sidebar.collapsed .sidebar-nav,
+        .sidebar.collapsed .sidebar-footer {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        
+        /* 确保汉堡菜单在收缩时仍然可见和可点击 */
+        .sidebar.collapsed .sidebar-toggle-btn {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        
+        /* 动画过渡 */
+        .sidebar {
+            transition: width 0.3s ease;
+        }
+        
+        .sidebar-nav,
+        .sidebar-footer {
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        /* 统一顶部栏样式 - Gemini风格 */
+        .unified-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #ffffff;
+            border-bottom: 1px solid #e8eaed;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: none;
+        }
+        
+        .top-left, .top-center, .top-right {
+            display: flex;
+            align-items: center;
+        }
+        
+        .top-left {
+            flex: 0 0 auto;
+            margin-right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* 顶部栏标题样式 */
+        .topbar-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #3c4043;
+            margin: 0;
+            letter-spacing: -0.3px;
+        }
+        
+        .top-right {
+            flex: 0 0 auto;
+            margin-left: 20px;
+            gap: 12px;
+        }
+
+        /* 现代化科技感按钮样式 */
+        .unified-top-bar .topbar-auth-btn {
+            height: 38px;
+            border-radius: 12px;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 添加发光效果 */
+        .unified-top-bar .topbar-auth-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.8s ease;
+        }
+        
+        .unified-top-bar .topbar-auth-btn:hover::before {
+            left: 100%;
+        }
+        
+        .unified-top-bar .topbar-login-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .unified-top-bar .topbar-login-btn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #5a72d8 0%, #6a4190 100%);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .unified-top-bar .topbar-register-btn {
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
+        }
+        
+        .unified-top-bar .topbar-register-btn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #00b8e6 0%, #1765cc 100%);
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.4);
+        }
+
+        /* 主内容区域适配 */
+        .main-content {
+            margin-top: 60px;
+            padding: 20px 15px;
+            min-height: calc(100vh - 60px);
+            overflow-x: hidden;
+        }
+        
+        /* 桌面端适配 */
+        @media (min-width: 769px) {
+            .unified-top-bar {
+                left: 280px;
+                transition: left 0.3s ease;
+            }
+            
+            .unified-top-bar.sidebar-collapsed {
+                left: 64px;
+            }
+            
+            .topbar-title {
+                display: block;
+            }
+            
+            .mobile-hamburger-btn {
+                display: none;
+            }
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .unified-top-bar {
+                left: 0;
+                height: 56px;
+                padding: 0 16px;
+            }
+            
+            .main-content {
+                margin-top: 56px;
+                padding: 20px 16px;
+            }
+            
+            .mobile-hamburger-btn {
+                display: flex;
+            }
+            
+            .topbar-title {
+                display: none;
+            }
+        }
+
+        /* 隐私政策页面专用样式 */
+        .privacy-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 1rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .last-updated {
+            color: #64748b;
+            font-size: 1rem;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .privacy-content {
+            color: #4a5568;
+            line-height: 1.7;
+        }
+        
+        .privacy-content h2 {
+            color: #1a202c;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .privacy-content h3 {
+            color: #1a202c;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 1.5rem 0 1rem 0;
+        }
+        
+        .privacy-content p {
+            color: #4a5568;
+            margin-bottom: 1rem;
+        }
+        
+        .privacy-content ul {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+        
+        .privacy-content li {
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+        
+        .privacy-content strong {
+            color: #1a202c;
+            font-weight: 600;
+        }
+        
+        .highlight-box {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid #667eea;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+        }
+        
+        .highlight-box p {
+            margin: 0;
+            color: #1a202c;
+        }
+        
+        .contact-info {
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+        }
+        
+        .contact-info h3 {
+            color: #1a202c;
+            margin-bottom: 1rem;
+        }
+        
+        .contact-info a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .contact-info a:hover {
+            color: #764ba2;
+        }
+
+        @media (max-width: 768px) {
+            .privacy-container {
+                padding: 30px 20px;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .privacy-content h2 {
+                font-size: 1.5rem;
+            }
+            
+            .privacy-content h3 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 左侧菜单栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <!-- 汉堡菜单按钮 - 用于收缩/展开侧边栏 -->
+                <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarCollapse()">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/chat" class="nav-item">
+                    <div class="icon">💬</div>
+                    <div class="text">AI 对话</div>
+                </a>
+                <a href="/image" class="nav-item">
+                    <div class="icon">🎨</div>
+                    <div class="text">AI 图像生成</div>
+                </a>
+                <a href="/tts" class="nav-item">
+                    <div class="icon">🔊</div>
+                    <div class="text">文字转语音</div>
+                </a>
+                <a href="/subtitle" class="nav-item">
+                    <div class="icon">📝</div>
+                    <div class="text">字幕提取</div>
+                </a>
+                <a href="/pricing" class="nav-item">
+                    <div class="icon">💰</div>
+                    <div class="text">价格方案</div>
+                </a>
+                <a href="/contact" class="nav-item">
+                    <div class="icon">📞</div>
+                    <div class="text">联系我们</div>
+                </a>
+                <a href="/privacy" class="nav-item active">
+                    <div class="icon">🔒</div>
+                    <div class="text">隐私政策</div>
+                </a>
+                <a href="/terms" class="nav-item">
+                    <div class="icon">📋</div>
+                    <div class="text">服务条款</div>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <!-- 根据登录状态显示内容由JavaScript处理 -->
+            </div>
+        </div>
+        
+        <!-- 移动端遮罩层 -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+        
+        <!-- 统一顶部栏 -->
+        <div class="unified-top-bar" id="unified-top-bar">
+            <!-- 左侧：标题和移动端汉堡菜单 -->
+            <div class="top-left">
+                <button class="mobile-hamburger-btn" onclick="toggleSidebar()">☰</button>
+                <h1 class="topbar-title">Toolify AI</h1>
+            </div>
+            
+            <!-- 中间：页面标识 -->
+            <div class="top-center">
+                <span style="font-weight: 600; color: #5f6368;">隐私政策</span>
+            </div>
+            
+            <!-- 右侧：登录注册按钮 -->
+            <div class="top-right">
+                {% if user_name %}
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="color: #5f6368; font-size: 14px;">{{ balance_display }}</div>
+                        <a href="/user" style="color: #5f6368; text-decoration: none; font-weight: 500;">{{ user_name }}</a>
+                    </div>
+                {% else %}
+                    <div id="topbar-auth-buttons" style="display: flex; gap: 10px;">
+                        <a href="/user" class="topbar-auth-btn topbar-login-btn">登录</a>
+                        <a href="/user" class="topbar-auth-btn topbar-register-btn">注册</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <div class="privacy-container">
+                <h1 class="page-title">隐私政策</h1>
+                <div class="last-updated">最后更新时间：2024年1月1日</div>
+                
+                <div class="privacy-content">
+                    <div class="highlight-box">
+                        <p><strong>重要提示：</strong>我们非常重视您的隐私权。请仔细阅读本隐私政策，了解我们如何收集、使用和保护您的个人信息。</p>
+                    </div>
+
+                    <h2>1. 信息收集</h2>
+                    <h3>1.1 我们收集的信息类型</h3>
+                    <p>在您使用Toolify AI服务时，我们可能会收集以下类型的信息：</p>
+                    <ul>
+                        <li><strong>账户信息：</strong>姓名、邮箱地址、电话号码等注册信息</li>
+                        <li><strong>使用数据：</strong>您与AI助手的对话记录、生成的图片内容、语音合成记录</li>
+                        <li><strong>技术信息：</strong>设备信息、IP地址、浏览器类型、操作系统</li>
+                        <li><strong>支付信息：</strong>支付方式、交易记录（支付详情由第三方支付平台处理）</li>
+                    </ul>
+
+                    <h3>1.2 信息收集方式</h3>
+                    <p>我们通过以下方式收集信息：</p>
+                    <ul>
+                        <li>您直接提供的信息（注册、使用服务时）</li>
+                        <li>自动收集的技术信息（日志文件、Cookie等）</li>
+                        <li>第三方服务提供商的信息（支付平台等）</li>
+                    </ul>
+
+                    <h2>2. 信息使用</h2>
+                    <p>我们收集的信息将用于以下目的：</p>
+                    <ul>
+                        <li>提供和改进AI服务功能</li>
+                        <li>处理用户账户和支付事务</li>
+                        <li>提供客户支持和技术服务</li>
+                        <li>发送服务相关通知和更新</li>
+                        <li>分析用户使用模式，优化服务体验</li>
+                        <li>保障平台安全，防止滥用</li>
+                    </ul>
+
+                    <h2>3. 信息共享与披露</h2>
+                    <h3>3.1 我们不会出售您的个人信息</h3>
+                    <p>我们承诺不会向任何第三方出售、出租或交易您的个人信息。</p>
+
+                    <h3>3.2 信息共享情况</h3>
+                    <p>在以下情况下，我们可能会共享您的信息：</p>
+                    <ul>
+                        <li>获得您明确同意的情况下</li>
+                        <li>与可信赖的服务提供商共享（如支付处理、云存储）</li>
+                        <li>法律要求或政府机关要求</li>
+                        <li>保护我们的权利、财产或安全</li>
+                    </ul>
+
+                    <h2>4. 数据安全</h2>
+                    <p>我们采用多重安全措施保护您的数据：</p>
+                    <ul>
+                        <li><strong>加密传输：</strong>使用SSL/TLS加密传输数据</li>
+                        <li><strong>安全存储：</strong>采用行业标准的数据加密存储</li>
+                        <li><strong>访问控制：</strong>严格限制数据访问权限</li>
+                        <li><strong>定期审计：</strong>定期进行安全审计和漏洞扫描</li>
+                        <li><strong>备份机制：</strong>建立完善的数据备份和恢复机制</li>
+                    </ul>
+
+                    <h2>5. 数据保留</h2>
+                    <p>我们会根据以下原则保留您的数据：</p>
+                    <ul>
+                        <li>账户信息：在您的账户活跃期间持续保留</li>
+                        <li>对话记录：根据服务需要保留30-90天</li>
+                        <li>支付记录：按法律要求保留相应期间</li>
+                        <li>日志数据：通常保留6个月用于技术维护</li>
+                    </ul>
+
+                    <h2>6. 您的权利</h2>
+                    <p>根据适用的隐私法律，您享有以下权利：</p>
+                    <ul>
+                        <li><strong>访问权：</strong>要求获取我们持有的您的个人信息副本</li>
+                        <li><strong>更正权：</strong>要求更正不准确或不完整的个人信息</li>
+                        <li><strong>删除权：</strong>要求删除您的个人信息</li>
+                        <li><strong>限制处理：</strong>要求限制对您个人信息的处理</li>
+                        <li><strong>数据可携带：</strong>要求以结构化格式获取您的数据</li>
+                        <li><strong>反对权：</strong>反对我们处理您的个人信息</li>
+                    </ul>
+
+                    <h2>7. Cookie和跟踪技术</h2>
+                    <p>我们使用Cookie和类似技术来：</p>
+                    <ul>
+                        <li>记住您的登录状态和偏好设置</li>
+                        <li>分析网站使用情况和性能</li>
+                        <li>提供个性化的用户体验</li>
+                        <li>保障网站安全性</li>
+                    </ul>
+                    <p>您可以通过浏览器设置管理Cookie偏好。</p>
+
+                    <h2>8. 第三方服务</h2>
+                    <p>我们的服务可能集成第三方服务提供商：</p>
+                    <ul>
+                        <li><strong>AI模型提供商：</strong>OpenAI、Google、DeepSeek等</li>
+                        <li><strong>支付服务：</strong>支付宝、微信支付等</li>
+                        <li><strong>云存储服务：</strong>Cloudflare R2等</li>
+                    </ul>
+                    <p>这些第三方服务有各自的隐私政策，我们建议您仔细阅读。</p>
+
+                    <h2>9. 儿童隐私</h2>
+                    <p>我们的服务不面向13岁以下的儿童。如果我们发现收集了儿童的个人信息，将立即删除相关数据。</p>
+
+                    <h2>10. 国际数据传输</h2>
+                    <p>您的数据可能在您所在国家/地区以外的地方处理和存储。我们会确保适当的保护措施，以维护数据安全。</p>
+
+                    <h2>11. 政策更新</h2>
+                    <p>我们可能会不时更新本隐私政策。重大变更将通过以下方式通知您：</p>
+                    <ul>
+                        <li>在网站显著位置发布通知</li>
+                        <li>通过邮件发送通知</li>
+                        <li>在服务中显示弹窗提醒</li>
+                    </ul>
+
+                    <div class="contact-info">
+                        <h3>联系我们</h3>
+                        <p>如果您对本隐私政策有任何疑问，请通过以下方式联系我们：</p>
+                        <p>邮箱：<a href="mailto:privacy@nightwish.tech">privacy@nightwish.tech</a></p>
+                        <p>客服：<a href="/contact">联系我们页面</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+		
+    <script>
+        // 侧边栏收缩/展开控制
+        function toggleSidebarCollapse() {
+            const sidebar = document.getElementById('sidebar');
+            const topBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            // 同时调整顶部栏位置
+            if (sidebar.classList.contains('collapsed')) {
+                topBar.classList.add('sidebar-collapsed');
+            } else {
+                topBar.classList.remove('sidebar-collapsed');
+            }
+        }
+        
+        // 移动端侧边栏控制
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const unifiedTopBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.toggle('open');
+            if (sidebar.classList.contains('open')) {
+                overlay.classList.add('show');
+                // 隐藏统一顶部栏
+                if (unifiedTopBar) {
+                    unifiedTopBar.classList.add('hidden');
+                }
+            } else {
+                overlay.classList.remove('show');
+                // 显示统一顶部栏
+                if (unifiedTopBar) {
+                    unifiedTopBar.classList.remove('hidden');
+                }
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const unifiedTopBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+            // 显示统一顶部栏
+            if (unifiedTopBar) {
+                unifiedTopBar.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

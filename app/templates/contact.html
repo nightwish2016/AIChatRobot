@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>联系我们 - Toolify AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/loginButton.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/displayWindow.css') }}">
+    <script src="{{ url_for('static', filename='js/common/loginButton.js') }}"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* 侧边栏汉堡菜单样式 */
+        .sidebar-toggle-btn {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            padding: 0;
+            border-radius: 6px;
+            transition: background-color 0.15s ease;
+        }
+        
+        .sidebar-toggle-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .hamburger-line {
+            width: 18px;
+            height: 2px;
+            background: #5f6368;
+            border-radius: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        /* 收缩状态的侧边栏 */
+        .sidebar.collapsed {
+            width: 64px;
+        }
+        
+        /* 收缩时隐藏所有菜单内容，只保留汉堡菜单 */
+        .sidebar.collapsed .sidebar-nav,
+        .sidebar.collapsed .sidebar-footer {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        
+        /* 确保汉堡菜单在收缩时仍然可见和可点击 */
+        .sidebar.collapsed .sidebar-toggle-btn {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        
+        /* 动画过渡 */
+        .sidebar {
+            transition: width 0.3s ease;
+        }
+        
+        .sidebar-nav,
+        .sidebar-footer {
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        /* 统一顶部栏样式 - Gemini风格 */
+        .unified-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #ffffff;
+            border-bottom: 1px solid #e8eaed;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: none;
+        }
+        
+        .top-left, .top-center, .top-right {
+            display: flex;
+            align-items: center;
+        }
+        
+        .top-left {
+            flex: 0 0 auto;
+            margin-right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* 顶部栏标题样式 */
+        .topbar-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #3c4043;
+            margin: 0;
+            letter-spacing: -0.3px;
+        }
+        
+        .top-right {
+            flex: 0 0 auto;
+            margin-left: 20px;
+            gap: 12px;
+        }
+
+        /* 现代化科技感按钮样式 */
+        .unified-top-bar .topbar-auth-btn {
+            height: 38px;
+            border-radius: 12px;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 添加发光效果 */
+        .unified-top-bar .topbar-auth-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.8s ease;
+        }
+        
+        .unified-top-bar .topbar-auth-btn:hover::before {
+            left: 100%;
+        }
+        
+        .unified-top-bar .topbar-login-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .unified-top-bar .topbar-login-btn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #5a72d8 0%, #6a4190 100%);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .unified-top-bar .topbar-register-btn {
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
+        }
+        
+        .unified-top-bar .topbar-register-btn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #00b8e6 0%, #1765cc 100%);
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.4);
+        }
+
+        /* 主内容区域适配 */
+        .main-content {
+            margin-top: 60px;
+            padding: 20px 15px;
+            min-height: calc(100vh - 60px);
+            overflow-x: hidden;
+        }
+        
+        /* 桌面端适配 */
+        @media (min-width: 769px) {
+            .unified-top-bar {
+                left: 280px;
+                transition: left 0.3s ease;
+            }
+            
+            .unified-top-bar.sidebar-collapsed {
+                left: 64px;
+            }
+            
+            .topbar-title {
+                display: block;
+            }
+            
+            .mobile-hamburger-btn {
+                display: none;
+            }
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .unified-top-bar {
+                left: 0;
+                height: 56px;
+                padding: 0 16px;
+            }
+            
+            .main-content {
+                margin-top: 56px;
+                padding: 20px 16px;
+            }
+            
+            .mobile-hamburger-btn {
+                display: flex;
+            }
+            
+            .topbar-title {
+                display: none;
+            }
+        }
+
+        /* 联系页面专用样式 */
+        .contact-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 1rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .page-subtitle {
+            color: #64748b;
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .contact-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .contact-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.15);
+        }
+        
+        .contact-card h3 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        
+        .contact-card p {
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 0.8rem;
+        }
+        
+        .contact-card a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .contact-card a:hover {
+            color: #764ba2;
+        }
+        
+        .contact-form {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1a202c;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .contact-container {
+                padding: 30px 20px;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 左侧菜单栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <!-- 汉堡菜单按钮 - 用于收缩/展开侧边栏 -->
+                <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarCollapse()">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/chat" class="nav-item">
+                    <div class="icon">💬</div>
+                    <div class="text">AI 对话</div>
+                </a>
+                <a href="/image" class="nav-item">
+                    <div class="icon">🎨</div>
+                    <div class="text">AI 图像生成</div>
+                </a>
+                <a href="/tts" class="nav-item">
+                    <div class="icon">🔊</div>
+                    <div class="text">文字转语音</div>
+                </a>
+                <a href="/subtitle" class="nav-item">
+                    <div class="icon">📝</div>
+                    <div class="text">字幕提取</div>
+                </a>
+                <a href="/pricing" class="nav-item">
+                    <div class="icon">💰</div>
+                    <div class="text">价格方案</div>
+                </a>
+                <a href="/contact" class="nav-item active">
+                    <div class="icon">📞</div>
+                    <div class="text">联系我们</div>
+                </a>
+                <a href="/privacy" class="nav-item">
+                    <div class="icon">🔒</div>
+                    <div class="text">隐私政策</div>
+                </a>
+                <a href="/terms" class="nav-item">
+                    <div class="icon">📋</div>
+                    <div class="text">服务条款</div>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <!-- 根据登录状态显示内容由JavaScript处理 -->
+            </div>
+        </div>
+        
+        <!-- 移动端遮罩层 -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+        
+        <!-- 统一顶部栏 -->
+        <div class="unified-top-bar" id="unified-top-bar">
+            <!-- 左侧：标题和移动端汉堡菜单 -->
+            <div class="top-left">
+                <button class="mobile-hamburger-btn" onclick="toggleSidebar()">☰</button>
+                <h1 class="topbar-title">Toolify AI</h1>
+            </div>
+            
+            <!-- 中间：页面标识 -->
+            <div class="top-center">
+                <span style="font-weight: 600; color: #5f6368;">联系我们</span>
+            </div>
+            
+            <!-- 右侧：登录注册按钮 -->
+            <div class="top-right">
+                {% if user_name %}
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="color: #5f6368; font-size: 14px;">{{ balance_display }}</div>
+                        <a href="/user" style="color: #5f6368; text-decoration: none; font-weight: 500;">{{ user_name }}</a>
+                    </div>
+                {% else %}
+                    <div id="topbar-auth-buttons" style="display: flex; gap: 10px;">
+                        <a href="/user" class="topbar-auth-btn topbar-login-btn">登录</a>
+                        <a href="/user" class="topbar-auth-btn topbar-register-btn">注册</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <div class="contact-container">
+                <h1 class="page-title">联系我们</h1>
+                <p class="page-subtitle">随时为您提供帮助和支持</p>
+                
+                <div class="contact-grid">
+                    <div class="contact-card">
+                        <h3>📧 邮箱联系</h3>
+                        <p>如有任何问题或建议，欢迎发送邮件至：</p>
+                        <p><a href="mailto:support@nightwish.tech">support@nightwish.tech</a></p>
+                        <p>我们将在24小时内回复您的邮件</p>
+                    </div>
+
+                    <div class="contact-card">
+                        <h3>🏢 公司信息</h3>
+                        <p><strong>Toolify AI Technology Ltd.</strong></p>
+                        <p>致力于为用户提供最优质的AI服务体验</p>
+                        <p>服务时间：周一至周五 9:00-18:00</p>
+                    </div>
+
+                    <div class="contact-card">
+                        <h3>💬 在线客服</h3>
+                        <p>如需实时帮助，请使用右下角的在线客服功能</p>
+                        <p>客服时间：24小时在线</p>
+                        <p>平均响应时间：5分钟内</p>
+                    </div>
+
+                    <div class="contact-card">
+                        <h3>🔧 技术支持</h3>
+                        <p>技术问题专线：</p>
+                        <p><a href="mailto:tech@nightwish.tech">tech@nightwish.tech</a></p>
+                        <p>API集成、系统故障等技术问题</p>
+                    </div>
+                </div>
+
+                <div class="contact-form">
+                    <h3 class="form-title">留言反馈</h3>
+                    <form action="#" method="post">
+                        <div class="form-group">
+                            <label for="name">姓名</label>
+                            <input type="text" id="name" name="name" placeholder="请输入您的姓名" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">邮箱</label>
+                            <input type="email" id="email" name="email" placeholder="请输入您的邮箱地址" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">主题</label>
+                            <input type="text" id="subject" name="subject" placeholder="请输入消息主题" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">消息内容</label>
+                            <textarea id="message" name="message" rows="5" placeholder="请详细描述您的问题或建议" required></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn">发送消息</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+		
+    <script>
+        // 侧边栏收缩/展开控制
+        function toggleSidebarCollapse() {
+            const sidebar = document.getElementById('sidebar');
+            const topBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            // 同时调整顶部栏位置
+            if (sidebar.classList.contains('collapsed')) {
+                topBar.classList.add('sidebar-collapsed');
+            } else {
+                topBar.classList.remove('sidebar-collapsed');
+            }
+        }
+        
+        // 移动端侧边栏控制
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const unifiedTopBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.toggle('open');
+            if (sidebar.classList.contains('open')) {
+                overlay.classList.add('show');
+                // 隐藏统一顶部栏
+                if (unifiedTopBar) {
+                    unifiedTopBar.classList.add('hidden');
+                }
+            } else {
+                overlay.classList.remove('show');
+                // 显示统一顶部栏
+                if (unifiedTopBar) {
+                    unifiedTopBar.classList.remove('hidden');
+                }
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const unifiedTopBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+            // 显示统一顶部栏
+            if (unifiedTopBar) {
+                unifiedTopBar.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

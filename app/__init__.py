@@ -127,6 +127,7 @@ def create_app():
     from .views.orderCreation import orderCreationview_bp
     from .views.subtitle import subtitleview_bp
     from .views.pricing import pricing_bp
+    from .views.legal import legal_bp
 
     from .api.userAPI import userAPI_bp 
     from .api.allAPI import allAPI_bp 
@@ -143,6 +144,7 @@ def create_app():
     app.register_blueprint(orderCreationview_bp)
     app.register_blueprint(subtitleview_bp)
     app.register_blueprint(pricing_bp)
+    app.register_blueprint(legal_bp)
 
     app.register_blueprint(userAPI_bp)
     app.register_blueprint(allAPI_bp)
