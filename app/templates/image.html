@@ -391,52 +391,88 @@
             }
             
             .unified-top-bar .topbar-auth-btn {
-                height: 34px; /* 统一高度 */
-                padding: 8px 16px; /* 增加内边距 */
+                height: 36px; /* 统一高度 */
+                padding: 8px 18px; /* 增加内边距 */
                 font-size: 13px; /* 增加字体大小 */
-                border-radius: 17px;
-                min-width: 65px; /* 设置最小宽度 */
-                font-weight: 500;
+                border-radius: 18px;
+                min-width: 70px; /* 设置最小宽度 */
+                font-weight: 600;
                 white-space: nowrap;
             }
         }
         
-        /* Google/Gemini风格按钮 */
+        /* 现代化科技感按钮样式 */
         .unified-top-bar .topbar-auth-btn {
-            height: 36px;
-            border-radius: 20px;
-            padding: 8px 24px;
+            height: 38px;
+            border-radius: 12px;
+            padding: 8px 20px;
             font-size: 14px;
-            font-weight: 500;
-            border: 1px solid #dadce0;
+            font-weight: 600;
+            border: none;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 添加发光效果 */
+        .unified-top-bar .topbar-auth-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.8s ease;
+        }
+        
+        .unified-top-bar .topbar-auth-btn:hover::before {
+            left: 100%;
         }
         
         .unified-top-bar .topbar-login-btn {
-            background: #ffffff;
-            color: #3c4043;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
         
         .unified-top-bar .topbar-login-btn:hover {
-            background: #f8f9fa;
-            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.15);
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #5a72d8 0%, #6a4190 100%);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .unified-top-bar .topbar-login-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
         
         .unified-top-bar .topbar-register-btn {
-            background: #1a73e8;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 100%);
             color: #ffffff;
-            border-color: #1a73e8;
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
         }
         
         .unified-top-bar .topbar-register-btn:hover {
-            background: #1765cc;
-            border-color: #1765cc;
-            box-shadow: 0 1px 3px rgba(26, 115, 232, 0.4);
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #00b8e6 0%, #1765cc 100%);
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.4);
+        }
+        
+        .unified-top-bar .topbar-register-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
+        }
+        
+        /* 按钮内容高亮效果 */
+        .unified-top-bar .topbar-auth-btn:hover {
+            filter: brightness(1.1);
         }
         
         /* Gemini-style image generation input area */
