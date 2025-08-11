@@ -343,6 +343,43 @@
             color: #764ba2;
         }
 
+        /* 货币显示样式 */
+        .balance-main {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .balance-secondary {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .currency-toggle {
+            margin-top: 8px;
+        }
+
+        .toggle-btn {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn:hover {
+            background: #e0e0e0;
+            border-color: #ccc;
+        }
+
+        .toggle-btn:active {
+            background: #d0d0d0;
+        }
+
         @media (max-width: 768px) {
             .privacy-container {
                 padding: 30px 20px;
@@ -411,7 +448,17 @@
             </nav>
             
             <div class="sidebar-footer">
-                <!-- 根据登录状态显示内容由JavaScript处理 -->
+                <!-- 登录按钮（未登录时显示） -->
+                <button class="nav-item" id="sidebar-login-btn" style="display: none;" onclick="handleSidebarLogin()">
+                    <div class="icon">🔑</div>
+                    <div class="text">登录</div>
+                </button>
+                
+                <!-- 用户名（已登录时显示） -->
+                <div class="nav-item" id="sidebar-username" style="display: none;" onclick="toggleUserPopup()">
+                    <div class="icon">👤</div>
+                    <div class="text" id="sidebar-username-text">{{ user_name }}</div>
+                </div>
             </div>
         </div>
         
@@ -433,17 +480,22 @@
             
             <!-- 右侧：登录注册按钮 -->
             <div class="top-right">
-                {% if user_name %}
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <div style="color: #5f6368; font-size: 14px;">{{ balance_display }}</div>
-                        <a href="/user" style="color: #5f6368; text-decoration: none; font-weight: 500;">{{ user_name }}</a>
-                    </div>
-                {% else %}
-                    <div id="topbar-auth-buttons" style="display: flex; gap: 10px;">
-                        <a href="/user" class="topbar-auth-btn topbar-login-btn">登录</a>
-                        <a href="/user" class="topbar-auth-btn topbar-register-btn">注册</a>
-                    </div>
-                {% endif %}
+                <!-- 右上角登录/注册按钮（未登录时显示） -->
+                <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
+                    <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
+                            class="topbar-auth-btn topbar-login-btn">
+                        登录
+                    </button>
+                    <button onclick="window.location.href='/register'" 
+                            class="topbar-auth-btn topbar-register-btn">
+                        注册
+                    </button>
+                </div>
+                
+                <!-- 已登录时显示用户信息 -->
+                <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
+                    <span id="topbar-welcome-text" style="font-size: 14px; color: #555;">欢迎!</span>
+                </div>
             </div>
         </div>
 
@@ -573,8 +625,165 @@
             </div>
         </div>
     </div>
+
+    <!-- 用户信息弹窗 -->
+    <div id="popup">  
+        <div id="balance">
+            {% if balance_display %}
+                <div class="balance-main">余额: {{ balance_display }}</div>
+                {% if balance_secondary %}
+                    <div class="balance-secondary">(约{{ balance_secondary }})</div>
+                {% endif %}
+                <div class="currency-toggle">
+                    <button onclick="toggleCurrency()" class="toggle-btn">
+                        {% if currency_preference == 'CNY' %}切换到美元显示{% else %}切换到人民币显示{% endif %}
+                    </button>
+                </div>
+            {% else %}
+                <div class="balance-main">余额: ¥{{balance}}</div>
+            {% endif %}
+        </div>  
+        <div id="fund">
+            <form action="/payment_method" method="get">
+                <input type="hidden" name="user_email" value="{{ user_email }}">
+                <input type="hidden" name="amount" value="10">
+                <button id="fund" type="submit">充值</button>
+            </form>
+        </div>  
+        <form action="/logout">
+            <button id="logoutButton" type="submit">登出</button>
+        </form>
+    </div>
 		
     <script>
+        // 货币切换功能
+        function toggleCurrency() {
+            const currentCurrency = new URLSearchParams(window.location.search).get('currency') || 'CNY';
+            const newCurrency = currentCurrency === 'CNY' ? 'USD' : 'CNY';
+            
+            // 构建新的URL
+            const url = new URL(window.location);
+            url.searchParams.set('currency', newCurrency);
+            
+            // 重新加载页面
+            window.location.href = url.toString();
+        }
+
+        // 用户弹窗控制
+        function toggleUserPopup() {
+            const popup = document.getElementById('popup');
+            if (popup) {
+                const isVisible = popup.style.display === 'block';
+                
+                if (!isVisible) {
+                    popup.style.display = 'block';
+                    // 添加全局点击监听器
+                    setTimeout(() => {
+                        document.addEventListener('click', closePopupOnOutsideClick);
+                    }, 0);
+                } else {
+                    popup.style.display = 'none';
+                    // 移除全局点击监听器
+                    document.removeEventListener('click', closePopupOnOutsideClick);
+                }
+            }
+        }
+
+        // 点击外部区域关闭弹窗
+        function closePopupOnOutsideClick(event) {
+            const popup = document.getElementById('popup');
+            const sidebarUsername = document.getElementById('sidebar-username');
+            
+            if (popup && popup.style.display === 'block') {
+                // 检查点击是否在弹窗内部或用户名按钮上
+                const isInsidePopup = popup.contains(event.target);
+                const isOnUsernameButton = sidebarUsername && sidebarUsername.contains(event.target);
+                
+                if (!isInsidePopup && !isOnUsernameButton) {
+                    popup.style.display = 'none';
+                    document.removeEventListener('click', closePopupOnOutsideClick);
+                }
+            }
+        }
+
+        // 处理侧边栏登录按钮点击
+        function handleSidebarLogin() {
+            console.log('侧边栏登录按钮被点击');
+            window.location.href = '/loginPage?origin=' + encodeURIComponent(window.location.pathname);
+        }
+
+        // 检查登录状态的函数
+        async function checkLoginStatus() {
+            try {
+                const response = await fetch('/check-login');
+                const data = await response.json();           
+                return data;
+            } catch (error) {
+                console.error("Error checking login status:", error);
+                return { logged_in: false };
+            }
+        }
+
+        // 初始化登录功能
+        async function initializePageLogin() {
+            console.log('初始化页面登录功能');
+            
+            try {
+                // 首先检查登录状态
+                const loginData = await checkLoginStatus();
+                const isLoggedIn = loginData.logged_in;
+                
+                // 侧边栏元素
+                const sidebarLoginBtn = document.getElementById('sidebar-login-btn');
+                const sidebarUsername = document.getElementById('sidebar-username');
+                const sidebarUsernameText = document.getElementById('sidebar-username-text');
+                
+                // 顶部栏元素
+                const topbarAuthButtons = document.getElementById('topbar-auth-buttons');
+                const topbarUserInfo = document.getElementById('topbar-user-info');
+                const topbarWelcomeText = document.getElementById('topbar-welcome-text');
+                
+                if (isLoggedIn) {
+                    console.log('用户已登录');
+                    
+                    // 隐藏侧边栏登录，显示用户名
+                    if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                    if (sidebarUsername) sidebarUsername.style.display = 'flex';
+                    
+                    // 隐藏顶部栏登录按钮，显示用户信息
+                    if (topbarAuthButtons) topbarAuthButtons.style.display = 'none';
+                    if (topbarUserInfo) topbarUserInfo.style.display = 'flex';
+                    
+                    // 更新用户名显示
+                    if (loginData.user_name) {
+                        if (sidebarUsernameText) {
+                            sidebarUsernameText.textContent = loginData.user_name;
+                        }
+                        if (topbarWelcomeText) {
+                            topbarWelcomeText.textContent = `欢迎, ${loginData.user_name}!`;
+                        }
+                    }
+                } else {
+                    console.log('用户未登录');
+                    
+                    // 隐藏侧边栏登录和用户名
+                    if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                    if (sidebarUsername) sidebarUsername.style.display = 'none';
+                    
+                    // 显示顶部栏登录/注册按钮
+                    if (topbarAuthButtons) topbarAuthButtons.style.display = 'flex';
+                    if (topbarUserInfo) topbarUserInfo.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('初始化登录状态失败:', error);
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePageLogin();
+        });
+
         // 侧边栏收缩/展开控制
         function toggleSidebarCollapse() {
             const sidebar = document.getElementById('sidebar');
