@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>价格方案 - Toolify AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/loginButton.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common/displayWindow.css') }}">
+    <script src="{{ url_for('static', filename='js/common/loginButton.js') }}"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* 侧边栏汉堡菜单样式 */
+        .sidebar-toggle-btn {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            padding: 0;
+            border-radius: 6px;
+            transition: background-color 0.15s ease;
+        }
+        
+        .sidebar-toggle-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .hamburger-line {
+            width: 18px;
+            height: 2px;
+            background: #5f6368;
+            border-radius: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        /* 收缩状态的侧边栏 */
+        .sidebar.collapsed {
+            width: 64px;
+        }
+        
+        /* 收缩时隐藏所有菜单内容，只保留汉堡菜单 */
+        .sidebar.collapsed .sidebar-nav,
+        .sidebar.collapsed .sidebar-footer {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        
+        /* 确保汉堡菜单在收缩时仍然可见和可点击 */
+        .sidebar.collapsed .sidebar-toggle-btn {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        
+        /* 动画过渡 */
+        .sidebar {
+            transition: width 0.3s ease;
+        }
+        
+        .sidebar-nav,
+        .sidebar-footer {
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        /* 统一顶部栏样式 - Gemini风格 */
+        .unified-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #ffffff;
+            border-bottom: 1px solid #e8eaed;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: none;
+        }
+        
+        .top-left, .top-center, .top-right {
+            display: flex;
+            align-items: center;
+        }
+        
+        .top-left {
+            flex: 0 0 auto;
+            margin-right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* 顶部栏标题样式 - 科技感字体 */
+        .topbar-title {
+            font-size: 22px;
+            font-weight: 700;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 35%, #667eea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(26, 115, 232, 0.3);
+            display: none; /* 默认隐藏，桌面端显示 */
+            position: relative;
+        }
+        
+        .topbar-title::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -8px;
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 100%);
+            border-radius: 2px;
+            transform: translateY(-50%);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+        }
+        
+        .top-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .top-right {
+            flex: 0 0 auto;
+            margin-left: 20px;
+            gap: 12px;
+        }
+
+        /* 现代化科技感按钮样式 */
+        .unified-top-bar .topbar-auth-btn {
+            height: 38px;
+            border-radius: 12px;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 添加发光效果 */
+        .unified-top-bar .topbar-auth-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.8s ease;
+        }
+        
+        .unified-top-bar .topbar-auth-btn:hover::before {
+            left: 100%;
+        }
+        
+        .unified-top-bar .topbar-login-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .unified-top-bar .topbar-login-btn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #5a72d8 0%, #6a4190 100%);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .unified-top-bar .topbar-login-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .unified-top-bar .topbar-register-btn {
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
+        }
+        
+        .unified-top-bar .topbar-register-btn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #00b8e6 0%, #1765cc 100%);
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.4);
+        }
+        
+        .unified-top-bar .topbar-register-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
+        }
+        
+        /* 按钮内容高亮效果 */
+        .unified-top-bar .topbar-auth-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        /* 主内容区域适配 - 为固定顶部栏留出空间 */
+        .main-content {
+            margin-top: 60px; /* 为统一顶部栏留出空间 */
+            padding: 20px 15px;
+            min-height: calc(100vh - 60px);
+            overflow-x: hidden;
+        }
+        
+        /* 桌面端适配 - 侧边栏显示时 */
+        @media (min-width: 769px) {
+            .unified-top-bar {
+                left: 280px; /* 给左侧菜单栏留出空间 */
+                transition: left 0.3s ease;
+            }
+            
+            .unified-top-bar.sidebar-collapsed {
+                left: 64px; /* 收缩时调整顶部栏位置 */
+            }
+            
+            .topbar-title {
+                display: block; /* 桌面端显示标题 */
+            }
+            
+            .mobile-hamburger-btn {
+                display: none; /* 桌面端隐藏移动端汉堡菜单 */
+            }
+        }
+        
+        /* 平板设备适配 */
+        @media (max-width: 1024px) {
+            /* 平板和移动端都隐藏注册按钮 */
+            .topbar-register-btn {
+                display: none !important;
+            }
+        }
+        
+        /* 移动端汉堡菜单按钮 */
+        .mobile-hamburger-btn {
+            width: 36px;
+            height: 36px;
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            display: none; /* 默认隐藏，只在移动端显示 */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: #5f6368;
+            transition: background-color 0.15s ease;
+        }
+        
+        .mobile-hamburger-btn:hover {
+            background: #f1f3f4;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .unified-top-bar {
+                left: 0; /* 移动端占满全宽 */
+                height: 56px;
+                padding: 0 16px;
+            }
+            
+            .main-content {
+                margin-top: 56px; /* 调整移动端顶部间距 */
+                padding: 20px 16px;
+            }
+            
+            .top-left {
+                margin-right: 12px;
+            }
+            
+            .top-right {
+                margin-left: 12px;
+                gap: 8px;
+            }
+            
+            /* 移动端显示汉堡菜单按钮 */
+            .mobile-hamburger-btn {
+                display: flex;
+            }
+            
+            /* 移动端隐藏顶部栏标题 */
+            .topbar-title {
+                display: none;
+            }
+            
+            .unified-top-bar .topbar-auth-btn {
+                height: 34px;
+                padding: 6px 18px;
+                font-size: 13px;
+                border-radius: 10px;
+                font-weight: 600;
+            }
+        }
+
+        /* 价格页面主要样式 */
+        .pricing-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+        
+        @media (min-width: 768px) {
+            .pricing-container {
+                max-width: 1200px;
+                padding: 40px;
+            }
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .pricing-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+        
+        @media (min-width: 768px) {
+            .pricing-header {
+                margin-bottom: 50px;
+            }
+            
+            .pricing-header h1 {
+                font-size: 3rem;
+            }
+        }
+
+        .pricing-header p {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .pricing-section {
+            margin-bottom: 30px;
+        }
+        
+        @media (min-width: 768px) {
+            .pricing-section {
+                margin-bottom: 50px;
+            }
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        /* 表格样式 */
+        .pricing-table {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .pricing-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .pricing-table th,
+        .pricing-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e8eaed;
+        }
+
+        .pricing-table th {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .pricing-table tbody tr {
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .pricing-table tbody tr:hover {
+            background: #f8f9fa;
+            transform: scale(1.01);
+        }
+
+        .pricing-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .pricing-table tbody tr:nth-child(even):hover {
+            background: #e9ecef;
+        }
+
+        .model-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .price-value {
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .price-note {
+            font-size: 0.9rem;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* 特殊标签 */
+        .popular-badge {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .new-badge {
+            background: linear-gradient(135deg, #00d4ff 0%, #1a73e8 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        /* 响应式表格 */
+        @media (max-width: 768px) {
+            .main-content {
+                margin-top: 56px;
+                padding: 15px 10px;
+            }
+            
+            .pricing-container {
+                padding: 20px 15px;
+                margin: 0;
+                border-radius: 15px;
+            }
+            
+            .pricing-header h1 {
+                font-size: 2rem;
+            }
+            
+            .pricing-header p {
+                font-size: 1rem;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+                margin-bottom: 20px;
+            }
+            
+            .pricing-table {
+                font-size: 0.85rem;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            }
+            
+            .pricing-table th,
+            .pricing-table td {
+                padding: 10px 6px;
+                word-break: break-word;
+            }
+            
+            /* 移动端表格滚动 */
+            .table-wrapper {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 -5px;
+                padding: 0 5px;
+            }
+            
+            .pricing-table {
+                min-width: 550px; /* 确保表格有足够宽度 */
+            }
+            
+            /* 移动端标签调整 */
+            .popular-badge,
+            .new-badge {
+                font-size: 0.7rem;
+                padding: 2px 8px;
+                margin-left: 5px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .pricing-container {
+                padding: 15px 10px;
+            }
+            
+            .pricing-header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .section-title {
+                font-size: 1.3rem;
+            }
+            
+            .pricing-table {
+                font-size: 0.8rem;
+                min-width: 500px;
+            }
+            
+            .pricing-table th,
+            .pricing-table td {
+                padding: 8px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 左侧菜单栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <!-- 汉堡菜单按钮 - 用于收缩/展开侧边栏 -->
+                <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarCollapse()">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/chat" class="nav-item">
+                    <div class="icon">💬</div>
+                    <div class="text">AI 对话</div>
+                </a>
+                <a href="/image" class="nav-item">
+                    <div class="icon">🎨</div>
+                    <div class="text">AI 图像生成</div>
+                </a>
+                <a href="/tts" class="nav-item">
+                    <div class="icon">🔊</div>
+                    <div class="text">文字转语音</div>
+                </a>
+                <a href="/subtitle" class="nav-item">
+                    <div class="icon">📝</div>
+                    <div class="text">字幕提取</div>
+                </a>
+                <a href="/pricing" class="nav-item active">
+                    <div class="icon">💰</div>
+                    <div class="text">价格方案</div>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <!-- 登录按钮（未登录时显示） -->
+                <button class="nav-item" id="sidebar-login-btn" style="display: none;" onclick="handleSidebarLogin()">
+                    <div class="icon">🔑</div>
+                    <div class="text">登录</div>
+                </button>
+                
+                <!-- 用户名（已登录时显示） -->
+                <div class="nav-item" id="sidebar-username" style="display: none;" onclick="toggleUserPopup()">
+                    <div class="icon">👤</div>
+                    <div class="text" id="sidebar-username-text">{{ user_name }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 移动端遮罩层 -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+        
+        <!-- 统一顶部栏 - 包含所有顶部元素 -->
+        <div class="unified-top-bar" id="unified-top-bar">
+            <!-- 左侧：Toolify AI 标题和移动端汉堡菜单 -->
+            <div class="top-left">
+                <button class="mobile-hamburger-btn" onclick="toggleSidebar()">☰</button>
+                <h1 class="topbar-title">Toolify AI</h1>
+            </div>
+            
+            <!-- 中间：价格页面标识 -->
+            <div class="top-center">
+                <span style="font-weight: 600; color: #5f6368;">价格方案</span>
+            </div>
+            
+            <!-- 右侧：登录注册按钮 -->
+            <div class="top-right">
+                <!-- 右上角登录/注册按钮（未登录时显示） -->
+                <div id="topbar-auth-buttons" style="display: none; gap: 10px;">
+                    <button onclick="window.location.href='/loginPage?origin=' + encodeURIComponent(window.location.pathname)" 
+                            class="topbar-auth-btn topbar-login-btn">
+                        登录
+                    </button>
+                    <button onclick="window.location.href='/register'" 
+                            class="topbar-auth-btn topbar-register-btn">
+                        注册
+                    </button>
+                </div>
+                
+                <!-- 已登录时显示用户信息 -->
+                <div id="topbar-user-info" style="display: none; align-items: center; gap: 10px;">
+                    <span id="topbar-welcome-text" style="font-size: 14px; color: #555;">欢迎!</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <div class="pricing-container">
+                <div class="pricing-header">
+                    <h1>价格方案</h1>
+                    <p>透明公正的定价，按使用量付费，无隐藏费用</p>
+                </div>
+
+                <!-- AI 对话价格 -->
+                <div class="pricing-section">
+                    <h2 class="section-title">💬 AI 对话服务</h2>
+                    <div class="table-wrapper">
+                        <table class="pricing-table">
+                            <thead>
+                                <tr>
+                                    <th>模型</th>
+                                    <th>输入价格 (100万tokens)</th>
+                                    <th>输出价格 (100万tokens)</th>
+                                    <th>特点</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="model-name">DeepSeek Chat <span class="popular-badge">推荐</span></td>
+                                    <td class="price-value">$0.071</td>
+                                    <td class="price-value">$1.15</td>
+                                    <td>高性价比，中文优化</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">GPT-4o Mini <span class="new-badge">新品</span></td>
+                                    <td class="price-value">$0.15</td>
+                                    <td class="price-value">$0.60</td>
+                                    <td>快速响应，成本优化</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">GPT-3.5 Turbo</td>
+                                    <td class="price-value">$0.50</td>
+                                    <td class="price-value">$1.50</td>
+                                    <td>经典模型，稳定可靠</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">GPT-4o (2024-08-06)</td>
+                                    <td class="price-value">$2.50</td>
+                                    <td class="price-value">$10.00</td>
+                                    <td>最新版本，性能提升</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">GPT-4o (2024-05-13)</td>
+                                    <td class="price-value">$5.00</td>
+                                    <td class="price-value">$15.00</td>
+                                    <td>多模态支持</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">GPT-4 Turbo</td>
+                                    <td class="price-value">$10.00</td>
+                                    <td class="price-value">$30.00</td>
+                                    <td>高性能，长上下文</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">GPT-4</td>
+                                    <td class="price-value">$30.00</td>
+                                    <td class="price-value">$60.00</td>
+                                    <td>顶级质量</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">GPT-4 32K</td>
+                                    <td class="price-value">$60.00</td>
+                                    <td class="price-value">$120.00</td>
+                                    <td>超长上下文支持</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="price-note">* 价格单位：美元/100万tokens</p>
+                </div>
+
+                <!-- AI 图像生成价格 -->
+                <div class="pricing-section">
+                    <h2 class="section-title">🎨 AI 图像生成</h2>
+                    <div class="table-wrapper">
+                        <table class="pricing-table">
+                            <thead>
+                                <tr>
+                                    <th>模型</th>
+                                    <th>质量</th>
+                                    <th>分辨率</th>
+                                    <th>价格 (每张)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="model-name">DALL-E 2</td>
+                                    <td>Standard</td>
+                                    <td>256×256</td>
+                                    <td class="price-value">$0.016</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">DALL-E 2</td>
+                                    <td>Standard</td>
+                                    <td>512×512</td>
+                                    <td class="price-value">$0.018</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">DALL-E 2</td>
+                                    <td>Standard</td>
+                                    <td>1024×1024</td>
+                                    <td class="price-value">$0.020</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">DALL-E 3 <span class="popular-badge">推荐</span></td>
+                                    <td>Standard</td>
+                                    <td>1024×1024</td>
+                                    <td class="price-value">$0.040</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">DALL-E 3</td>
+                                    <td>Standard</td>
+                                    <td>1024×1079 / 1079×1024</td>
+                                    <td class="price-value">$0.080</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">DALL-E 3</td>
+                                    <td>HD</td>
+                                    <td>1024×1024</td>
+                                    <td class="price-value">$0.080</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">DALL-E 3</td>
+                                    <td>HD</td>
+                                    <td>1024×1079 / 1079×1024</td>
+                                    <td class="price-value">$0.120</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="price-note">* 价格单位：美元/张图片</p>
+                </div>
+
+                <!-- 语音服务价格 -->
+                <div class="pricing-section">
+                    <h2 class="section-title">🔊 语音服务</h2>
+                    <div class="table-wrapper">
+                        <table class="pricing-table">
+                            <thead>
+                                <tr>
+                                    <th>服务类型</th>
+                                    <th>模型</th>
+                                    <th>输入价格</th>
+                                    <th>输出价格</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="model-name">文字转语音 (TTS)</td>
+                                    <td>Gemini 2.5 Flash TTS</td>
+                                    <td class="price-value">$0.50 /1k字符</td>
+                                    <td class="price-value">$1.11 /1k字符</td>
+                                </tr>
+                                <tr>
+                                    <td class="model-name">语音转文字 (转录)</td>
+                                    <td>Whisper-1</td>
+                                    <td class="price-value">$0.006 /分钟</td>
+                                    <td class="price-value">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="price-note">* TTS价格单位：美元/1000字符，转录价格单位：美元/分钟</p>
+                </div>
+
+                <!-- 付费说明 -->
+                <div class="pricing-section">
+                    <h2 class="section-title">💡 付费说明</h2>
+                    <div style="background: #f8f9fa; padding: 30px; border-radius: 12px; border-left: 4px solid #667eea;">
+                        <h3 style="color: #333; margin-bottom: 15px;">按量付费，透明计费</h3>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">
+                                <span style="position: absolute; left: 0; color: #667eea;">✓</span>
+                                <strong>无月租费</strong>：只为实际使用的服务付费
+                            </li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">
+                                <span style="position: absolute; left: 0; color: #667eea;">✓</span>
+                                <strong>余额充值</strong>：支持支付宝、微信等多种充值方式
+                            </li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">
+                                <span style="position: absolute; left: 0; color: #667eea;">✓</span>
+                                <strong>实时计费</strong>：使用多少扣费多少，余额实时更新
+                            </li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">
+                                <span style="position: absolute; left: 0; color: #667eea;">✓</span>
+                                <strong>价格透明</strong>：所有费用明细清晰可查
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 用户信息弹窗 -->
+        <div id="popup">  
+            <div id="balance">余额: ¥0</div>  
+            <div id="fund">
+                <form action="/payment_method" method="get">
+                    <input type="hidden" name="user_email" value="{{ user_email }}">
+                    <input type="hidden" name="amount" value="10">
+                    <button id="fund" type="submit">充值</button>
+                </form>
+            </div>  
+            <form action="/logout">
+                <button id="logoutButton" type="submit">登出</button>
+            </form>
+        </div>
+    </div>
+		
+    <script>
+        // 侧边栏收缩/展开控制
+        function toggleSidebarCollapse() {
+            const sidebar = document.getElementById('sidebar');
+            const topBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            // 同时调整顶部栏位置
+            if (sidebar.classList.contains('collapsed')) {
+                topBar.classList.add('sidebar-collapsed');
+            } else {
+                topBar.classList.remove('sidebar-collapsed');
+            }
+        }
+        
+        // 移动端侧边栏控制
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const unifiedTopBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.toggle('open');
+            if (sidebar.classList.contains('open')) {
+                overlay.classList.add('show');
+                // 隐藏统一顶部栏
+                if (unifiedTopBar) {
+                    unifiedTopBar.classList.add('hidden');
+                }
+            } else {
+                overlay.classList.remove('show');
+                // 显示统一顶部栏
+                if (unifiedTopBar) {
+                    unifiedTopBar.classList.remove('hidden');
+                }
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const unifiedTopBar = document.querySelector('.unified-top-bar');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+            // 显示统一顶部栏
+            if (unifiedTopBar) {
+                unifiedTopBar.classList.remove('hidden');
+            }
+        }
+        
+        // 用户弹窗控制
+        function toggleUserPopup() {
+            const popup = document.getElementById('popup');
+            if (popup) {
+                const isVisible = popup.style.display === 'block';
+                
+                if (!isVisible) {
+                    popup.style.display = 'block';
+                    // 添加全局点击监听器
+                    setTimeout(() => {
+                        document.addEventListener('click', closePopupOnOutsideClick);
+                    }, 0);
+                } else {
+                    popup.style.display = 'none';
+                    // 移除全局点击监听器
+                    document.removeEventListener('click', closePopupOnOutsideClick);
+                }
+            }
+        }
+        
+        // 点击外部区域关闭弹窗
+        function closePopupOnOutsideClick(event) {
+            const popup = document.getElementById('popup');
+            const sidebarUsername = document.getElementById('sidebar-username');
+            
+            if (popup && popup.style.display === 'block') {
+                // 检查点击是否在弹窗内部或用户名按钮上
+                const isInsidePopup = popup.contains(event.target);
+                const isOnUsernameButton = sidebarUsername && sidebarUsername.contains(event.target);
+                
+                if (!isInsidePopup && !isOnUsernameButton) {
+                    popup.style.display = 'none';
+                    document.removeEventListener('click', closePopupOnOutsideClick);
+                }
+            }
+        }
+        
+        // 处理侧边栏登录按钮点击
+        function handleSidebarLogin() {
+            console.log('侧边栏登录按钮被点击');
+            window.location.href = '/loginPage?origin=' + encodeURIComponent(window.location.pathname);
+        }
+        
+        // 初始化登录功能
+        async function initializePricingLogin() {
+            console.log('初始化价格页面登录功能');
+            
+            // 首先检查登录状态
+            const loginData = await checkLoginStatus();
+            const isLoggedIn = loginData.logged_in;
+            
+            // 侧边栏元素
+            const sidebarLoginBtn = document.getElementById('sidebar-login-btn');
+            const sidebarUsername = document.getElementById('sidebar-username');
+            const sidebarUsernameText = document.getElementById('sidebar-username-text');
+            
+            // 顶部栏元素
+            const topbarAuthButtons = document.getElementById('topbar-auth-buttons');
+            const topbarUserInfo = document.getElementById('topbar-user-info');
+            const topbarWelcomeText = document.getElementById('topbar-welcome-text');
+            
+            if (isLoggedIn) {
+                console.log('用户已登录');
+                
+                // 隐藏侧边栏登录，显示用户名
+                if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                if (sidebarUsername) sidebarUsername.style.display = 'flex';
+                
+                // 隐藏顶部栏登录按钮
+                if (topbarAuthButtons) topbarAuthButtons.style.display = 'none';
+                if (topbarUserInfo) topbarUserInfo.style.display = 'flex';
+                
+                // 更新用户名显示
+                if (loginData.user_name) {
+                    if (sidebarUsernameText) {
+                        sidebarUsernameText.textContent = loginData.user_name;
+                    }
+                    if (topbarWelcomeText) {
+                        topbarWelcomeText.textContent = `欢迎, ${loginData.user_name}!`;
+                    }
+                }
+            } else {
+                console.log('用户未登录');
+                
+                // 隐藏侧边栏登录和用户名
+                if (sidebarLoginBtn) sidebarLoginBtn.style.display = 'none';
+                if (sidebarUsername) sidebarUsername.style.display = 'none';
+                
+                // 显示顶部栏登录/注册按钮
+                if (topbarAuthButtons) topbarAuthButtons.style.display = 'flex';
+                if (topbarUserInfo) topbarUserInfo.style.display = 'none';
+            }
+        }
+        
+        // 调用初始化函数
+        initializePricingLogin();
+        
+        // 保持原有的处理器用于向后兼容
+        if (typeof loginButtonDisplayProcess === 'function') {
+            loginButtonDisplayProcess();
+        }
+    </script>
+</body>
+</html>
