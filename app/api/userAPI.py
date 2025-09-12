@@ -17,7 +17,13 @@ import requests
 userAPI_bp = Blueprint('userapi', __name__)
 logger = logging.getLogger('log')
 def ip_key_func():
-    return get_remote_address()
+    # Prefer real client IP from Cloudflare/Nginx, fallback to Werkzeug's remote address
+    ip = request.headers.get('CF-Connecting-IP')
+    if not ip:
+        xff = request.headers.get('X-Forwarded-For')
+        if xff:
+            ip = xff.split(',')[0].strip()
+    return ip or get_remote_address()
 
 def verify_turnstile_token(token: str, remote_ip: str = None) -> bool:
     """Verify Cloudflare Turnstile token server-side."""
