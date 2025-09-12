@@ -11,6 +11,10 @@ import redis
 import json
 from flask import  current_app
 from flask import Blueprint
+from dotenv import load_dotenv
+
+# 加载.env文件
+load_dotenv()
 
 openai_bp = Blueprint('oepnai', __name__)
 

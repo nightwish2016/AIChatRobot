@@ -14,6 +14,10 @@ import os
 from app.alifacepay import AliFacePay
 from app.CreemPay import CreemPay
 from threading import Lock
+from dotenv import load_dotenv
+
+# 加载.env文件
+load_dotenv()
 
 # logging.basicConfig(level=logging.INFO)
 # logger = logging.getLogger(__name__)
@@ -75,6 +79,10 @@ def create_app():
     #--------
 
     limiter.init_app(app) 
+    
+    # Cloudflare Turnstile keys (from environment)
+    app.config['TURNSTILE_SITE_KEY'] = os.getenv('TURNSTILE_SITE_KEY', '')
+    app.config['TURNSTILE_SECRET_KEY'] = os.getenv('TURNSTILE_SECRET_KEY', '')
     CORS(app, origins=["https://nightwish.tech","https://www.nightwish.tech"])
    
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)

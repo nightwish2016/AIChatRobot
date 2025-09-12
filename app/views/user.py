@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template,session,request,make_response,jsonify,url_for,flash,redirect
+from flask import Blueprint, render_template,session,request,make_response,jsonify,url_for,flash,redirect, current_app
 from ..UserUtils import UserUtils
 import secrets
 from werkzeug.security import generate_password_hash,check_password_hash
@@ -28,7 +28,8 @@ def loginPage():
 
 @userview_bp.route('/register')
 def register():
-    return render_template('register.html')
+    site_key = current_app.config.get('TURNSTILE_SITE_KEY', '')
+    return render_template('register.html', turnstile_site_key=site_key)
 
 
 

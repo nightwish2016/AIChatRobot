@@ -1,6 +1,6 @@
 import logging 
 # from app import logger
-from flask import session,Blueprint,make_response,jsonify,redirect, url_for,request,render_template
+from flask import session,Blueprint,make_response,jsonify,redirect, url_for,request,render_template, current_app
 from app.UserUtils import UserUtils
 from werkzeug.security import generate_password_hash,check_password_hash
 import redis
@@ -10,6 +10,7 @@ from app.DB.SqlLiteUtil import SqlLiteUtil
 from app import limiter 
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import requests
 
 
 
@@ -17,6 +18,29 @@ userAPI_bp = Blueprint('userapi', __name__)
 logger = logging.getLogger('log')
 def ip_key_func():
     return get_remote_address()
+
+def verify_turnstile_token(token: str, remote_ip: str = None) -> bool:
+    """Verify Cloudflare Turnstile token server-side."""
+    try:
+        secret = current_app.config.get('TURNSTILE_SECRET_KEY', '')
+        if not secret or not token:
+            return False
+        payload = {
+            'secret': secret,
+            'response': token,
+        }
+        if remote_ip:
+            payload['remoteip'] = remote_ip
+        resp = requests.post(
+            'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+            data=payload,
+            timeout=5
+        )
+        data = resp.json()
+        return bool(data.get('success'))
+    except Exception as e:
+        logger.error(f'Turnstile verify error: {e}')
+        return False
 
 @userAPI_bp.route('/check-login')
 def check_login():
@@ -165,6 +189,13 @@ def check_email_register():
 @userAPI_bp.route('/register', methods=['POST'])
 @limiter.limit("1 per minute,2 per hour,2 per day", key_func=ip_key_func)
 def registerapi():
+    # Turnstile human verification
+    token = request.form.get('cf-turnstile-response')
+    client_ip = request.headers.get('CF-Connecting-IP') or request.remote_addr
+    if not verify_turnstile_token(token, client_ip):
+        result = {"error": "Bad Request", "message": "Turnstile verification failed"}
+        return make_response(jsonify(result), 400)
+
     # data = request.json
     user=request.form['user']
     email = request.form['email']

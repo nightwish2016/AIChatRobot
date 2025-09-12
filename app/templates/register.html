@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>注册</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
         /* 全局样式重置 */
         * {
@@ -148,6 +149,7 @@
             }
         }
     </style>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
     <div class="container">
@@ -173,7 +175,11 @@
                 <input type="password" id="confirm_password" name="confirm_password" placeholder="请再次输入密码" required>
                 <span id="error_message" class="error"></span>
             </div>
-            
+            <!-- Cloudflare Turnstile widget -->
+            <div class="input-group">
+                <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}"></div>
+            </div>
+
             <button type="submit" id="submmitButton">注册</button>
         </form>
         
