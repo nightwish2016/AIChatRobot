@@ -1,235 +1,161 @@
-# AI Chat Robot - 现代化AI助手平台
+# AIChatRobot
 
-一个基于Flask的现代化AI聊天机器人平台，集成了聊天、图像生成和文字转语音功能。
+## Project Overview
+AIChatRobot is a Flask-based multimodal AI assistant and membership billing platform. It combines models from OpenAI, DeepSeek, and Google Gemini to provide text chat, image generation, text-to-speech, subtitle extraction, and related workflows. Alipay and bank card top-ups are supported alongside attachment management, email notifications, and usage accounting. SQLite tracks account activity, Redis handles caching and throttling, and Cloudflare R2 stores attachments and subtitle files.
 
-## 🚀 主要功能
+## Feature Highlights
+- **Multi-model chat**: Integrates OpenAI Chat Completions and DeepSeek with optional streaming responses, context caching, and token accounting (`app/OpenAI.py`).
+- **Multimedia tools**: Offers DALL·E image generation, Gemini TTS, Whisper subtitle transcription, and detailed usage logging (`app/GeminiAPI.py`, `app/subtitle_extractor.py`).
+- **Attachment pipeline**: `AttachmentProcessor` extracts text, uploads files to Cloudflare R2, and supports OCR for PDF, DOCX, Excel, and image formats (`app/attachment_processor.py`, `app/r2_storage.py`).
+- **Account system**: Registration, login, password reset, and account activation with Cloudflare Turnstile protection and email notifications (`app/api/userAPI.py`, `app/SendMail.py`).
+- **Top-up and billing**: Integrates Alipay Face-to-Face Pay and Creem card acquiring (with Redis caching) while recording every transaction (`app/alifacepay/app.py`, `app/CreemPay.py`, `app/payUtils.py`).
+- **Risk control and throttling**: Flask-Limiter provides per-IP and per-user rate limits; Redis caches balances and attachment contents.
+- **Template site**: `templates/` includes chat, image, TTS, subtitle, and pricing pages available through routes such as `chat`, `image`, `tts`, `subtitle`, and `pricing`.
 
-### 🤖 AI 聊天
-- 支持多种AI模型：DeepSeek、GPT-4O-mini、GPT-4O
-- 实时对话界面
-- 代码高亮显示
-- Markdown渲染支持
+## Tech Stack
+- Python 3.11/3.12 (`restartService.sh` assumes a pyenv-based 3.12 environment)
+- Flask, Flask-RESTX, Flask-Cors, Flask-Limiter, Flask-JWT-Extended
+- Redis for caching and rate-limiting state
+- SQLite accessed via `app/DB/SqlLiteUtil.py`
+- OpenAI, Google Gemini, DeepSeek, Creem API, and Alipay Face-to-Face Pay
+- Cloudflare R2 (S3 compatible) for storing attachments and subtitles
+- Optional tooling: ffmpeg, pytesseract, PyPDF2, python-docx, openpyxl, and other media utilities
 
-### 🎨 AI 图像生成
-- 支持DALL-E 2和DALL-E 3模型
-- 多种图像尺寸选择
-- 大图预览功能
-- 一键下载生成图像
-
-### 🔊 文字转语音 (TTS)
-- 多种语音选择
-- 实时音频生成
-- 音频播放和下载功能
-- 支持中文文本
-
-### 🎬 视频字幕提取
-- 支持多种视频格式
-- 内嵌字幕提取
-- 外挂字幕识别
-- AI语音识别生成字幕
-- **Cloudflare R2存储支持** - 文件不存储在本地服务器
-
-## 🎨 现代化UI设计
-
-### 设计特色
-- **响应式设计**：完美适配桌面端、平板和手机端
-- **现代化界面**：采用渐变背景和毛玻璃效果
-- **流畅动画**：丰富的交互动画和过渡效果
-- **直观操作**：简洁明了的用户界面
-
-### 技术亮点
-- **Flexbox布局**：灵活的响应式布局系统
-- **CSS Grid**：现代化的网格布局
-- **移动优先**：优先考虑移动端用户体验
-- **无障碍设计**：支持键盘导航和屏幕阅读器
-
-## 📱 响应式支持
-
-### 桌面端 (1024px+)
-- 完整功能展示
-- 多列布局
-- 大屏幕优化
-
-### 平板端 (768px - 1024px)
-- 适配中等屏幕
-- 优化触摸操作
-- 保持核心功能
-
-### 手机端 (< 768px)
-- 单列布局
-- 触摸友好界面
-- 优化小屏幕显示
-
-## 🛠️ 技术栈
-
-### 后端
-- **Flask** - Python Web框架
-- **SQLite** - 轻量级数据库
-- **JWT** - 用户认证
-- **CORS** - 跨域支持
-
-### 前端
-- **HTML5** - 语义化标记
-- **CSS3** - 现代化样式
-- **JavaScript** - 交互逻辑
-- **响应式设计** - 多设备适配
-
-### AI服务
-- **OpenAI API** - GPT模型
-- **DeepSeek API** - 中文AI模型
-- **DALL-E** - 图像生成
-- **TTS服务** - 文字转语音
-- **Whisper API** - 语音识别
-
-### 存储服务
-- **SQLite** - 本地数据库
-- **Cloudflare R2** - 对象存储（可选）
-
-## 🚀 快速开始
-
-### 环境要求
-- Python 3.7+
-- Flask
-- 现代浏览器
-
-### 安装步骤
-1. 克隆项目
-```bash
-git clone [项目地址]
-cd AIChatRobot
+## Project Structure
 ```
-
-2. 安装依赖
-```bash
-pip install -r requirements.txt
-```
-
-3. 配置环境变量
-```bash
-# 设置OpenAI API密钥
-export OPENAI_API_KEY="your-api-key"
-
-# 可选：配置Cloudflare R2存储（用于字幕提取功能）
-export CLOUDFLARE_ACCOUNT_ID="your-account-id"
-export R2_ACCESS_KEY_ID="your-access-key-id"
-export R2_SECRET_ACCESS_KEY="your-secret-access-key"
-export R2_BUCKET_NAME="your-bucket-name"
-```
-
-4. 运行应用
-```bash
-python app.py
-```
-
-5. 访问应用
-```
-http://localhost:5000
-```
-
-## 📁 项目结构
-
-```
-AIChatRobot/
+├── app.py                  # Flask application entrypoint
 ├── app/
-│   ├── static/
-│   │   ├── css/
-│   │   │   ├── common/          # 通用样式
-│   │   │   ├── chat/           # 聊天页面样式
-│   │   │   └── image/          # 图像页面样式
-│   │   ├── js/                 # JavaScript文件
-│   │   └── image/              # 静态图片
-│   ├── templates/              # HTML模板
-│   ├── views/                  # 视图控制器
-│   ├── r2_storage.py          # R2存储工具类
-│   └── DB/                     # 数据库相关
-├── logs/                       # 日志文件
-├── uploads/                    # 本地文件上传目录
-├── subtitles/                  # 本地字幕文件目录
-├── requirements.txt            # 依赖列表
-├── r2_config_example.env      # R2配置示例
-├── R2_STORAGE_README.md       # R2存储详细说明
-└── test_r2_storage.py         # R2存储测试脚本
+│   ├── __init__.py         # create_app, logging, limiter, service wiring
+│   ├── OpenAI.py           # OpenAI/DeepSeek chat, image, streaming handlers
+│   ├── GeminiAPI.py        # Gemini TTS and media processing
+│   ├── subtitle_extractor.py  # Whisper subtitles plus R2 upload helpers
+│   ├── attachment_processor.py # Attachment validation, OCR, storage
+│   ├── r2_storage.py       # Cloudflare R2 wrapper
+│   ├── CreemPay.py         # Card payment workflow
+│   ├── alifacepay/         # Alipay Face-to-Face Pay integration
+│   ├── views/              # Page routes (chat/image/tts/subtitle/...)
+│   ├── api/                # REST APIs for chat, attachments, users
+│   ├── DB/SqlLiteUtil.py   # SQLite DAO utility
+│   ├── templates/          # Jinja2 templates
+│   └── static/             # Static assets
+├── requirements.txt        # Dependency list (UTF-16 LE encoded)
+├── sqlscript/              # Database initialization scripts
+└── restartService.sh       # Gunicorn restart script
 ```
 
-## 🎯 用户体验优化
+## Before You Start
+- **Python**: Use Python 3.11 or later (production script runs `pyenv shell myenv3.12`).
+- **System dependencies**: Install `ffmpeg`, `tesseract-ocr`, `libreoffice`, and other tools as required for subtitle and document processing.
+- **Database**: SQLite is used by default; configure `DB_PATH` for the actual file location (for example `./app/DB/OpenAI.db`).
+- **Redis**: Expects `localhost:6379` by default to support caching and rate limiting.
+- **Cloudflare R2**: Requires account ID, access key, secret, and bucket.
+- **External APIs**: Prepare credentials for OpenAI, DeepSeek, Google (Gemini + Cloud TTS + Generative Language), Creem, Alipay Face-to-Face Pay, and SMTP.
 
-### 界面改进
-- ✅ 现代化渐变背景
-- ✅ 毛玻璃效果
-- ✅ 圆角设计
-- ✅ 阴影效果
-- ✅ 流畅动画
+## Environment Variables
+Create a `.env` file in the project root and populate the following values:
 
-### 交互优化
-- ✅ 悬停效果
-- ✅ 点击反馈
-- ✅ 加载动画
-- ✅ 错误提示
-- ✅ 成功反馈
+| Variable | Description |
+| --- | --- |
+| `OPENAI_API_KEY`, `DS_API_KEY` | API keys for OpenAI Chat Completions and DeepSeek. |
+| `GOOGLE_API_KEY` | Google Gemini / Generative AI API key. |
+| `DB_PATH` | SQLite file path, for example `./app/DB/OpenAI.db`. |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB` | Redis connection settings. |
+| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile credentials. |
+| `PRODUCTION_APPID`, `PRODUCTION_KEY_PATH` | Alipay Face-to-Face Pay App ID and private key directory (`SANDBOX_*` for sandbox). |
+| `CREEM_ENVIRONMENT` | `sandbox` or `production`. |
+| `CREEM_SANDBOX_API_KEY`, etc. | Creem API keys and webhook secrets. |
+| `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | Cloudflare R2 configuration. |
+| `BASE_URL`, `DOMAIN` | Public endpoints used for payment callbacks and email links. |
+| `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | SMTP settings used by `SendMail`. |
+| `EMAIL_PASSWORD` | SMTP password consumed by `SendMail`. |
 
-### 移动端优化
-- ✅ 触摸友好按钮
-- ✅ 适配小屏幕
-- ✅ 优化字体大小
-- ✅ 简化导航
+> Copy `.env.sample` if available; otherwise create the file manually.
 
-## 🔧 自定义配置
+## Installation and Deployment
+```
+# 1. Clone the repository
+git clone <repo-url>
+cd AIChatRobot
 
-### Cloudflare R2存储配置
+# 2. Create a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
 
-如果您希望使用Cloudflare R2存储来存储视频和字幕文件（而不是本地存储），请参考以下配置：
+# 3. Convert dependency file encoding (requirements.txt is UTF-16 LE)
+iconv -f utf-16le -t utf-8 requirements.txt > requirements-utf8.txt
+pip install -r requirements-utf8.txt
 
-1. **创建R2存储桶**：在Cloudflare控制台创建R2存储桶
-2. **生成API令牌**：获取访问密钥ID和秘密访问密钥
-3. **设置环境变量**：配置必要的环境变量
-4. **运行测试**：使用 `python test_r2_storage.py` 验证配置
+# 4. Initialize the database
+sqlite3 ./app/DB/OpenAI.db < sqlscript/user.sql
+sqlite3 ./app/DB/OpenAI.db < sqlscript/history.sql
+sqlite3 ./app/DB/OpenAI.db < sqlscript/price.sql
+sqlite3 ./app/DB/OpenAI.db < sqlscript/Transaction.sql
+sqlite3 ./app/DB/OpenAI.db < sqlscript/barcode.sql
 
-详细配置说明请参考：[R2_STORAGE_README.md](R2_STORAGE_README.md)
+# 5. Launch Redis (example)
+redis-server
 
-### 主题颜色
-可以在CSS文件中修改主色调：
-```css
-:root {
-    --primary-color: #667eea;
-    --secondary-color: #764ba2;
-    --success-color: #28a745;
-    --danger-color: #dc3545;
-}
+# 6. Run the development server
+export FLASK_APP=app.py
+flask run --host=0.0.0.0 --port=5000
 ```
 
-### 响应式断点
-```css
-/* 手机端 */
-@media (max-width: 768px) { }
-
-/* 平板端 */
-@media (min-width: 769px) and (max-width: 1024px) { }
-
-/* 桌面端 */
-@media (min-width: 1025px) { }
+For production you can reuse `restartService.sh`:
 ```
+bash restartService.sh
+```
+The script activates the pyenv environment, shuts down existing Gunicorn processes, and starts four workers bound to 0.0.0.0:5000.
 
-## 📈 性能优化
+## Module Highlights
+- **Application factory**: `app/__init__.py` creates the app, sets up logging (under `logs/`), rate limiting, CORS, JWT, payment services, and registers blueprints.
+- **Chat and streaming**: `app/OpenAI.py` manages conversation history, calls OpenAI/DeepSeek APIs, and writes chat logs to `chatHistory`.
+- **Multimodal services**: `app/imageGeneration.py`, `app/GeminiAPI.py`, and `app/subtitle_extractor.py` handle image generation, TTS, and subtitle extraction, including ffmpeg/Whisper calls and billing records.
+- **Attachment workflow**: `app/attachment_processor.py` validates uploads, performs OCR/format parsing, uploads to R2, and caches extracted text in Redis.
+- **Payment center**: `app/CreemPay.py`, `app/alifacepay/app.py`, and `app/views/orderCreation.py` coordinate top-ups, product caching in Redis, transaction storage, and QR code generation.
+- **User services**: `app/api/userAPI.py` handles login, registration, email verification, Turnstile checks, and Redis caching; `app/SendMail.py` sends email notifications.
+- **Subtitle service**: `app/views/subtitle.py` exposes upload, processing, and download endpoints that can write results back to R2.
+- **Logging and throttling**: `CustomTimedRotatingFileHandler` writes to `logs/app.log.YYYYMMDD.log`, and Flask-Limiter applies IP and user-level limits.
 
-- **CSS优化**：使用现代CSS特性
-- **JavaScript优化**：异步加载和事件委托
-- **图片优化**：响应式图片和懒加载
-- **缓存策略**：浏览器缓存优化
+## Routes and API Reference
+- Pages: `/`, `/chat`, `/image`, `/tts`, `/subtitle`, `/pricing`, `/orderPreCreate`, `/payment_method`, and more.
+- Core APIs:
+  - `POST /api/v1/login`, `POST /register`, `GET /check-login`
+  - `POST /api/v1/chat`, `POST /chatStream`
+  - `POST /api/v1/image`
+  - `POST /api/v1/upload_attachment`, `GET|DELETE /api/v1/get_attachment/<id>`
+  - `POST /api/subtitle/upload`, `POST /api/subtitle/process`
+  - `GET /query_order`, `GET /payment_success`
 
-## 🤝 贡献指南
+Blueprint registration lives in `app/__init__.py` for easy inspection.
 
-欢迎提交Issue和Pull Request来改进项目！
+## Database Scripts
+The `sqlscript/` directory contains:
+- `user.sql`: user and account balance tables
+- `history.sql`: chat, image, TTS, and transcription history
+- `price.sql`: default model pricing
+- `Transaction.sql`: usage ledger
+- `barcode.sql`: recharge QR codes plus Alipay/bank-card transactions
+- `EmailFailure.sql`: records failed email deliveries
 
-## 📄 许可证
+Extend or migrate to another database by updating `DB_PATH` and `SqlLiteUtil`.
 
-MIT License
+## Logging and Operations
+- Application logs: stored in `logs/` with daily rotation.
+- Gunicorn logs: `/root/myai/gunicorn/*.log` (see `restartService.sh`).
+- Redis cache keys: `useid:{userid}`, `conversation:{id}`, `attachment:{userid}:{id}`, `creem:product:{env}:{amount}`, and similar.
+- Rate limits: see `app/api/allAPI.py` and `app/api/userAPI.py` for `@limiter.limit` settings.
 
-## 📞 联系方式
+## Troubleshooting
+- **Dependency installation fails**: Convert `requirements.txt` to UTF-8 first; install missing system libraries like ffmpeg/tesseract/openjpeg as required.
+- **Redis not running**: Login, attachments, and streaming chat rely on Redis; ensure the service is running and `.env` contains the correct host/port.
+- **API returns 401/402**: Verify login state, account activation, and balance; negative balances block requests.
+- **R2 errors**: Double-check environment variables and ensure the access key has read/write permissions.
+- **Email delivery fails**: Inspect the `EmailFailure` table or application logs; confirm SMTP credentials and throttling limits.
 
-如有问题或建议，请通过以下方式联系：
-- 提交Issue
-- 发送邮件
+## Development Tips
+- Start Redis before running `flask run`, and prepare an SQLite database populated with test data.
+- Enable DEBUG logging when testing multimedia or attachment features, and consider breakpoints in `app/attachment_processor.py`.
+- When adding new models or payment channels, update `sqlscript/price.sql` and the billing logic in `UserUtils`.
 
----
-
-**享受现代化的AI聊天体验！** 🎉
+## License
+No explicit license is provided. All rights reserved unless you obtain permission from the author.
