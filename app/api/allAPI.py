@@ -13,6 +13,7 @@ import redis
 import json
 import logging
 from ..UserUtils import UserUtils
+from app.chatHistoryUtils import chatHistoryUtils
 from app.utils import TokenNumber 
 
 
@@ -105,6 +106,53 @@ def chat():
     else:
         return jsonify({"error": "Unauthorized", "message": "please login"}), 401
     
+
+
+@allAPI_bp.route('/api/v1/chat/history', methods=['GET'])
+@limiter.limit("30 per minute,100 per hour,500 per day", key_func=user_id_key_func)
+@limiter.limit("30 per minute,100 per hour,500 per day", key_func=ip_key_func)
+def chat_history():
+    loginResult = check_login()
+    resLogin = json.loads(loginResult.get_data(as_text=True))["logged_in"]
+    if not resLogin:
+        return jsonify({"error": "Unauthorized", "message": "please login"}), 401
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Unauthorized", "message": "please login"}), 401
+
+    limit = request.args.get('limit', default=50, type=int)
+    if limit is None:
+        limit = 50
+    limit = max(1, min(limit, 200))
+
+    history_util = chatHistoryUtils()
+    session_id = request.args.get('session_id')
+    history = history_util.get_session_history(user_id, session_id, limit)
+    return jsonify(history), 200
+
+
+@allAPI_bp.route('/api/v1/chat/sessions', methods=['GET'])
+@limiter.limit("30 per minute,100 per hour,500 per day", key_func=user_id_key_func)
+@limiter.limit("30 per minute,100 per hour,500 per day", key_func=ip_key_func)
+def chat_sessions():
+    loginResult = check_login()
+    resLogin = json.loads(loginResult.get_data(as_text=True))["logged_in"]
+    if not resLogin:
+        return jsonify({"error": "Unauthorized", "message": "please login"}), 401
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Unauthorized", "message": "please login"}), 401
+
+    limit = request.args.get('limit', default=20, type=int)
+    if limit is None:
+        limit = 20
+    limit = max(1, min(limit, 100))
+
+    history_util = chatHistoryUtils()
+    sessions = history_util.list_recent_sessions(user_id, limit)
+    return jsonify({"sessions": sessions}), 200
 
 
 

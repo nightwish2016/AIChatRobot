@@ -1,3 +1,4 @@
+﻿from typing import Optional
 from app.chatHistoryUtils import chatHistoryUtils
 from flask import Flask, request,session,jsonify
 import uuid
@@ -45,24 +46,102 @@ class OpenAI:
     
         self.openai=openai
 
+    def _encoding_for_logging(self, model_name: str):
+        target_model = "gpt-4o" if model_name == "deepseek-chat" else model_name
+        try:
+            return tiktoken.encoding_for_model(target_model)
+        except KeyError:
+            logger.warning("Encoding for model %s not found, falling back to o200k_base", target_model)
+            return tiktoken.get_encoding("o200k_base")
+
+    def _now_timestamp(self) -> int:
+        return int(datetime.datetime.now().timestamp())
+
+    def _store_chat_log(
+        self,
+        session_id: str,
+        user_id: Optional[int],
+        role: str,
+        model_name: str,
+        prompt_tokens: int,
+        completion_tokens: int,
+        total_tokens: int,
+        created: int,
+        gpt_content: str,
+        prompt: str,
+        charge_status: int,
+    ) -> None:
+        if not session_id or user_id is None:
+            logger.debug(
+                "Skip storing chat history: session_id=%s user_id=%s role=%s",
+                session_id,
+                user_id,
+                role,
+            )
+            return
+        params = (
+            session_id,
+            user_id,
+            role,
+            model_name,
+            prompt_tokens,
+            completion_tokens,
+            total_tokens,
+            created,
+            gpt_content,
+            prompt,
+            charge_status,
+        )
+        try:
+            chatHistoryUtils().insertChatHistory(params)
+        except Exception as exc:
+            logger.exception(
+                "Failed to persist chat history for session=%s role=%s: %s",
+                session_id,
+                role,
+                exc,
+            )
+
+    def _log_user_message(self, session_id: str, user_id: Optional[int], model_name: str, prompt: str) -> None:
+        encoding = self._encoding_for_logging(model_name)
+        prompt_tokens = len(encoding.encode(prompt))
+        timestamp = self._now_timestamp()
+        self._store_chat_log(
+            session_id,
+            user_id,
+            "user",
+            model_name,
+            prompt_tokens,
+            0,
+            prompt_tokens,
+            timestamp,
+            prompt,
+            prompt,
+            0,
+        )
+
     def chat_with_gpt(self,prompt,model): 
         statusCode=200    
         response=""
         error=""
         message=""
 
-        conversation_history=session["chatHistory"]
-        sessionid=""
-        if conversation_history==None or len(conversation_history)==0:
+        conversation_history=session.get("chatHistory")
+        sessionid=session.get("sessionid")
+        if not conversation_history:
             conversation_history=[]
             sessionid=str(uuid.uuid4())
             session["sessionid"]=sessionid
-            logger.info("create sessionid:"+sessionid)
-        else:
-            sessionid=session["sessionid"]
-    
-            
+            logger.info("create sessionid:%s", sessionid)
+        elif not sessionid:
+            sessionid=str(uuid.uuid4())
+            session["sessionid"]=sessionid
+            logger.info("regenerate sessionid:%s", sessionid)
+
         conversation_history.append({"role": "user", "content": prompt})
+        session["chatHistory"]=conversation_history
+        user_id=session.get('user_id')
+        self._log_user_message(sessionid, user_id, model, prompt)
 
         try:
             logger.info("open ai call start**********1")
@@ -82,33 +161,44 @@ class OpenAI:
             conversation_history.append({"role": "assistant", "content": message})
 
             session["chatHistory"]=conversation_history
-            userId=session['user_id']  
+            userId=user_id  
             role=response.choices[0].message.role  
-            model=response.model    
+            response_model=response.model    
             complettionTokens=response.usage.completion_tokens
             promptTokens=response.usage.prompt_tokens
             totalTokens=response.usage.total_tokens
             created=response.created
             GptContent=message
             chargeStatus=1
-            # prompt=prompt
-            # params=(userId,role,model,promptTokens,complettionTokens,totalTokens,created,GptContent,prompt,sessionid)
-            params= (sessionid ,userId,role ,model ,promptTokens ,complettionTokens ,totalTokens,created ,GptContent , prompt, chargeStatus)
             
-            u=chatHistoryUtils()
             logger.info("db call start**********3")
             current_time = datetime.datetime.now()
             logger.info(current_time)
-            u.insertChatHistory(params)
+            self._store_chat_log(
+                sessionid,
+                userId,
+                role,
+                response_model,
+                promptTokens,
+                complettionTokens,
+                totalTokens,
+                created,
+                GptContent,
+                prompt,
+                chargeStatus,
+            )
             logger.info("db call start end**********4")
             current_time2 = datetime.datetime.now()
             logger.info(current_time2)
             logger.info(message)
         except Exception as e:
             logger.error(str(e)) 
-            error=e.code
-            statusCode=e.status_code  
-            message= e.body["message"]
+            error=getattr(e, "code", "unknown_error")
+            statusCode=getattr(e, "status_code", 500)  
+            if hasattr(e, "body") and isinstance(e.body, dict):
+                message= e.body.get("message", "")
+            else:
+                message=str(e)
                 
         if(statusCode!=200):
             result={"error":error,"statusCode":statusCode,"message":message}
@@ -121,7 +211,7 @@ class OpenAI:
     def chat_with_gpt_stream2(self,prompt,model,sessionDict):
         
 
-        # 连接到本地 Redis 服务
+        # 连接到本地Redis 服务
         logger.debug("chat_with_gpt_stream2**********1")
         redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
         logger.debug("chat_with_gpt_stream2**********2")
@@ -137,48 +227,55 @@ class OpenAI:
         sessionid=conversationid
         userid=sessionDict["user_id"]
 
+        requested_model=model
         conversation_history.append({"role": "user", "content": prompt})
-        enc=0
-        if model!="deepseek-chat":
-            enc = tiktoken.encoding_for_model(model)
-        else:
-            enc = tiktoken.encoding_for_model("gpt-4o")
-        u=TokenNumber()
+        user_encoding = self._encoding_for_logging(requested_model)
+        user_prompt_tokens = len(user_encoding.encode(prompt))
+        self._store_chat_log(
+            sessionid,
+            userid,
+            "user",
+            requested_model,
+            user_prompt_tokens,
+            0,
+            user_prompt_tokens,
+            self._now_timestamp(),
+            prompt,
+            prompt,
+            0,
+        )
+        token_counter=TokenNumber()
         try:
             logger.debug("open ai call start**********1")
             current_time2 = datetime.datetime.now()
             logger.debug(current_time2)    
-            if model=="deepseek-chat":
+            if requested_model=="deepseek-chat":
                 self.openai.api_key=self.ds_api_key
                 self.openai.base_url=self.ds_ai_base_url
             else:
                 self.openai.api_key=self.open_api_key
                 self.openai.base_url=self.openai_base_url
             response = self.openai.chat.completions.create(
-                model=model,
+                model=requested_model,
                 messages=conversation_history,
                 stream=True,
-                # max_tokens=500
-            
+                
             ) 
             
             finalMessages="" 
+            response_model_name=requested_model
             for chunk in response:
-                model=chunk.model
+                if getattr(chunk, "model", None):
+                    response_model_name = chunk.model
                 if chunk.choices[0].delta.content is not None:          
-                    # print(chunk.choices[0].delta.content, end="")
                     text=chunk.choices[0].delta.content                    
                     finalMessages+=text
-                    # logger.info(text)
-                    # print(text)
                     yield text
-                    # session["aa"]=123
                 elif chunk.choices[0].finish_reason == "stop":
                     logger.info("stream finished**********")
-                    # pass
                 else:
                     logger.info("stream stop due to reach max_token**********")
-                    yield "\n\n\n**Reach max token,please input continue(达到最大token,如果还需要这个问答,请输入继续**)"
+                    yield "\n\n\n**Reach max token, please input 'continue' to resume.**"
                 
          
                             
@@ -187,38 +284,43 @@ class OpenAI:
             current_time3= datetime.datetime.now()
           
             logger.debug(current_time3)
-            # logger.info(response)        
          
-            current_time = datetime.datetime.now()
-            timestamp = int(current_time.timestamp())                        
-            userId=userid
+            created_timestamp = self._now_timestamp()                        
             role="assistant"
-            
-            
-            #print(len(res))
            
-            res=enc.encode(prompt)
-            complettionTokens=len(enc.encode(finalMessages))
-            promptTokens=0
-            if model!="deepseek-chat":
-                promptTokens=u.num_tokens_from_messages(conversation_history,model) 
+            completion_encoding = self._encoding_for_logging(response_model_name)
+            complettionTokens=len(completion_encoding.encode(finalMessages))
+            if requested_model!="deepseek-chat":
+                promptTokens=token_counter.num_tokens_from_messages(conversation_history,response_model_name) 
             else:
-                promptTokens=u.num_tokens_from_messages(conversation_history,"gpt-4o") 
+                promptTokens=token_counter.num_tokens_from_messages(conversation_history,"gpt-4o") 
             
             totalTokens=complettionTokens+promptTokens
-            created=timestamp
             GptContent=finalMessages          
-            params= (sessionid ,userId,role ,model ,promptTokens ,complettionTokens ,totalTokens,created ,GptContent , prompt,1 )            
-            u=chatHistoryUtils()
-            u.insertChatHistory(params)    
+            self._store_chat_log(
+                sessionid,
+                userid,
+                role,
+                response_model_name,
+                promptTokens,
+                complettionTokens,
+                totalTokens,
+                created_timestamp,
+                GptContent,
+                prompt,
+                1,
+            )
             conversation_history.append({"role": "assistant", "content": finalMessages}) 
-            redis_client.hset("conversation_models", conversationid, model)      
+            redis_client.hset("conversation_models", conversationid, response_model_name)      
             redis_client.set(f'conversation:{conversationid}',  json.dumps(conversation_history),ex=3600)   
         except Exception as e:
             logger.error(str(e)) 
-            error=e.code
-            statusCode=e.status_code  
-            message= e.body["message"]                    
+            error=getattr(e, "code", "unknown_error")
+            statusCode=getattr(e, "status_code", 500)  
+            if hasattr(e, "body") and isinstance(e.body, dict):
+                message= e.body.get("message", "")
+            else:
+                message=str(e)                    
             if(statusCode!=200):
                 result={"error":error,"statusCode":statusCode,"message":message}
             else:
@@ -259,9 +361,12 @@ class OpenAI:
             image_url = response.data[0].url                                         
         except Exception as e:     
             logger.error(str(e))      
-            error=e.code
-            statusCode=e.status_code  
-            message= e.body["message"]
+            error=getattr(e, "code", "unknown_error")
+            statusCode=getattr(e, "status_code", 500)  
+            if hasattr(e, "body") and isinstance(e.body, dict):
+                message= e.body.get("message", "")
+            else:
+                message=str(e)
             
         # statusCode=e.status_code
         # result=e.message   

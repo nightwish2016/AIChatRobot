@@ -1,20 +1,285 @@
+let currentSessionId = null;
+
+function getHistoryContainer() {
+    return document.getElementById('history');
+}
+
+function updateGuidDisplay(sessionId) {
+    const guidDisplay = document.getElementById('guidDisplay');
+    if (guidDisplay) {
+        guidDisplay.textContent = sessionId || '';
+    }
+}
+
+function highlightActiveConversation(sessionId) {
+    const conversationItems = document.querySelectorAll('.conversation-item');
+    conversationItems.forEach((item) => {
+        if (sessionId && item.dataset.sessionId === sessionId) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+function setCurrentSessionId(sessionId) {
+    currentSessionId = sessionId || null;
+    updateGuidDisplay(currentSessionId);
+    highlightActiveConversation(currentSessionId);
+}
+
+function ensureSessionId() {
+    if (currentSessionId) {
+        return currentSessionId;
+    }
+    const guidDisplay = document.getElementById('guidDisplay');
+    if (guidDisplay && guidDisplay.textContent.trim().length > 0) {
+        currentSessionId = guidDisplay.textContent.trim();
+        return currentSessionId;
+    }
+    const guid = typeof generateGUID === 'function'
+        ? generateGUID()
+        : Math.random().toString(36).slice(2);
+    setCurrentSessionId(guid);
+    return guid;
+}
+
+function appendHistoryMessage(role, content) {
+    const historyContainer = getHistoryContainer();
+    if (!historyContainer) {
+        return;
+    }
+
+    const normalizedRole = (role || '').toLowerCase();
+    const safeContent = content || '';
+    const messageElement = document.createElement('div');
+
+    if (normalizedRole === 'user') {
+        messageElement.className = 'user-input';
+        if (safeContent.indexOf('\n') !== -1) {
+            messageElement.innerText = 'You: \n' + safeContent;
+        } else {
+            messageElement.innerText = 'You: ' + safeContent;
+        }
+    } else {
+        messageElement.className = 'chatgpt-output';
+        messageElement.innerHTML = marked.parse(safeContent);
+    }
+
+    historyContainer.appendChild(messageElement);
+}
+
+function clearHistoryContainer() {
+    const historyContainer = getHistoryContainer();
+    if (historyContainer) {
+        historyContainer.innerHTML = '';
+    }
+}
+
+function formatSessionTime(isoString) {
+    if (!isoString) {
+        return '';
+    }
+    try {
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) {
+            return '';
+        }
+        return date.toLocaleString();
+    } catch (error) {
+        return '';
+    }
+}
+
+function buildConversationItem(session) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'conversation-item';
+    button.dataset.sessionId = session.session_id;
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'conversation-title';
+    titleDiv.textContent = session.title || '新的对话';
+
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'conversation-time';
+    timeDiv.textContent = formatSessionTime(session.last_created_iso);
+
+    button.appendChild(titleDiv);
+    button.appendChild(timeDiv);
+
+    button.addEventListener('click', async () => {
+        await loadChatHistory(session.session_id);
+        highlightActiveConversation(session.session_id);
+    });
+
+    return button;
+}
+
+async function loadChatHistory(sessionId = null) {
+    const historyContainer = getHistoryContainer();
+    if (!historyContainer) {
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.set('limit', '100');
+    if (sessionId) {
+        params.set('session_id', sessionId);
+    }
+
+    try {
+        const response = await fetch(`/api/v1/chat/history?${params.toString()}`);
+        if (!response.ok) {
+            if (response.status !== 401 && response.status !== 404) {
+                console.warn('Failed to load chat history', response.status);
+            }
+            return;
+        }
+
+        const data = await response.json();
+        if (!data || !Array.isArray(data.messages)) {
+            return;
+        }
+
+        const resolvedSessionId = data.session_id || sessionId || ensureSessionId();
+        setCurrentSessionId(resolvedSessionId);
+
+        historyContainer.innerHTML = '';
+        data.messages.forEach((item) => {
+            appendHistoryMessage(item.role, item.content);
+        });
+
+        hljs.highlightAll();
+        historyContainer.scrollTop = historyContainer.scrollHeight;
+    } catch (error) {
+        console.error('Failed to load chat history:', error);
+    }
+}
+
+async function loadConversationSessions(options = {}) {
+    const listContainer = document.getElementById('conversation-list');
+    const emptyState = document.getElementById('conversation-empty');
+    if (!listContainer) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/v1/chat/sessions?limit=50');
+        if (!response.ok) {
+            if (response.status === 401) {
+                listContainer.innerHTML = '';
+                if (emptyState) {
+                    emptyState.style.display = 'block';
+                }
+            } else {
+                console.warn('Failed to load conversation list', response.status);
+            }
+            return;
+        }
+
+        const data = await response.json();
+        const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+
+        listContainer.innerHTML = '';
+        if (sessions.length === 0) {
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
+            if (!options.skipHistoryLoad) {
+                startNewConversation();
+            }
+            return;
+        }
+
+        if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+
+        sessions.forEach((session) => {
+            const item = buildConversationItem(session);
+            listContainer.appendChild(item);
+        });
+
+        if (options.skipHistoryLoad) {
+            highlightActiveConversation(currentSessionId);
+            return;
+        }
+
+        let targetSessionId = options.selectSession || currentSessionId;
+        if (!targetSessionId && options.selectLatest !== false) {
+            targetSessionId = sessions[0]?.session_id;
+        }
+
+        if (targetSessionId) {
+            await loadChatHistory(targetSessionId);
+        } else if (sessions.length > 0) {
+            await loadChatHistory(sessions[0].session_id);
+        }
+    } catch (error) {
+        console.error('Failed to load conversation list:', error);
+    }
+}
+
+function startNewConversation() {
+    const historyContainer = getHistoryContainer();
+    if (historyContainer) {
+        historyContainer.innerHTML = '';
+    }
+
+    const guid = typeof generateGUID === 'function'
+        ? generateGUID()
+        : Math.random().toString(36).slice(2);
+    setCurrentSessionId(guid);
+
+    const listContainer = document.getElementById('conversation-list');
+    if (listContainer) {
+        listContainer.querySelectorAll('.conversation-item').forEach((item) => item.classList.remove('active'));
+    }
+    const emptyState = document.getElementById('conversation-empty');
+    if (emptyState) {
+        const hasSessions = listContainer && listContainer.childElementCount > 0;
+        emptyState.style.display = hasSessions ? 'none' : 'block';
+    }
+}
+
+function refreshConversationListForCurrentSession() {
+    loadConversationSessions({
+        selectSession: currentSessionId,
+        skipHistoryLoad: true,
+    });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const newChatButton = document.getElementById('new-chat-button');
+    if (newChatButton) {
+        newChatButton.addEventListener('click', () => {
+            startNewConversation();
+            highlightActiveConversation(null);
+        });
+    }
+
+    try {
+        const loginInfo = await checkLoginStatus();
+        if (loginInfo && loginInfo.logged_in) {
+            await loadConversationSessions({ selectLatest: true });
+        } else {
+            startNewConversation();
+        }
+    } catch (error) {
+        console.error('Chat history initialization failed:', error);
+    }
+});
+
 async function ChatReuqest(prompt,model,guid) {                		
     console.log("******")
     cleanInputPromptText()
-    console.log(guid)
-    //user input
-    const userInput = document.createElement('div');
-    userInput.className = 'user-input';
-    
-    if( prompt.indexOf("\n")!== -1)
-    {
-        userInput.innerText = 'You: \n' + prompt
-        // userInput.innerHTML=userInput.innerHTML.replace(/\n/g, '<br>');
-    }
-    else{
-        userInput.innerText = 'You: ' + prompt
-    }
-    historyField.appendChild(userInput);
+
+    const sessionId = ensureSessionId();
+    setCurrentSessionId(sessionId);
+    console.log(sessionId)
+
+    appendHistoryMessage('user', prompt);
     historyField.scrollTop = historyField.scrollHeight;
 
     
@@ -61,7 +326,7 @@ async function ChatReuqest(prompt,model,guid) {
     const data = {
         model: model,  // 这里设置 model 参数
         prompt: prompt,
-        conversationid: guid,   // 这里设置 prompt 参数
+        conversationid: sessionId,   // 这里设置 prompt 参数
         attachment_ids: attachmentIds  // 新增：附件ID列表
     };
     
@@ -85,6 +350,7 @@ async function ChatReuqest(prompt,model,guid) {
             reader.read().then(({ done, value }) => {
                 if (done) {
                     console.log('Stream complete');
+                    refreshConversationListForCurrentSession();
                     return;
                 }
                 const text = decoder.decode(value, { stream: true });
@@ -129,6 +395,7 @@ async function ChatReuqest(prompt,model,guid) {
         processStream();
     }).catch(error => {
         console.error('Fetch error:', error);
+        refreshConversationListForCurrentSession();
     });
     // let text3=marked.parse(s);
     // console.log('Received s3:', s)
