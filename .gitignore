@@ -3,3 +3,5 @@ __pycache__/
 launch.json
 OpenAI.db
 *.env
+.myenv/
+*.example
