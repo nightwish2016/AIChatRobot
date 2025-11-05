@@ -1,5 +1,6 @@
 ﻿from typing import Optional
 from app.chatHistoryUtils import chatHistoryUtils
+from app.session_title import SessionTitleManager
 from flask import Flask, request,session,jsonify
 import uuid
 import logging 
@@ -120,6 +121,24 @@ class OpenAI:
             0,
         )
 
+    def _ensure_session_title(
+        self,
+        session_id: str,
+        conversation_history,
+        fallback: str = "",
+    ) -> None:
+        try:
+            if not session_id:
+                return
+            messages = []
+            for entry in (conversation_history or [])[:6]:
+                role = entry.get("role", "user")
+                content = entry.get("content", "")
+                messages.append({"role": role, "content": content})
+            SessionTitleManager().ensure_title(session_id, messages, fallback=fallback)
+        except Exception as exc:
+            logger.debug("Skip session title generation: %s", exc)
+
     def chat_with_gpt(self,prompt,model): 
         statusCode=200    
         response=""
@@ -186,6 +205,11 @@ class OpenAI:
                 GptContent,
                 prompt,
                 chargeStatus,
+            )
+            self._ensure_session_title(
+                sessionid,
+                conversation_history,
+                fallback=prompt,
             )
             logger.info("db call start end**********4")
             current_time2 = datetime.datetime.now()
@@ -310,6 +334,11 @@ class OpenAI:
                 prompt,
                 1,
             )
+            self._ensure_session_title(
+                sessionid,
+                conversation_history + [{"role": "assistant", "content": finalMessages}],
+                fallback=prompt,
+            )
             conversation_history.append({"role": "assistant", "content": finalMessages}) 
             redis_client.hset("conversation_models", conversationid, response_model_name)      
             redis_client.set(f'conversation:{conversationid}',  json.dumps(conversation_history),ex=3600)   
@@ -325,8 +354,10 @@ class OpenAI:
                 result={"error":error,"statusCode":statusCode,"message":message}
             else:
                 result={"statusCode":statusCode,"message":message}  
-            yield  result['error']+":"+result['message']
-    
+            error_text = str(result.get('error') or 'unknown_error')
+            message_text = str(result.get('message') or '')
+            yield  f"{error_text}:{message_text}"
+
             # return result
         
 

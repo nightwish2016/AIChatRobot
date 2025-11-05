@@ -241,6 +241,8 @@ function startNewConversation() {
         const hasSessions = listContainer && listContainer.childElementCount > 0;
         emptyState.style.display = hasSessions ? 'none' : 'block';
     }
+
+    return guid;
 }
 
 function refreshConversationListForCurrentSession() {
@@ -259,12 +261,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    startNewConversation();
+
     try {
         const loginInfo = await checkLoginStatus();
         if (loginInfo && loginInfo.logged_in) {
-            await loadConversationSessions({ selectLatest: true });
-        } else {
-            startNewConversation();
+            await loadConversationSessions({ selectLatest: false, skipHistoryLoad: true });
         }
     } catch (error) {
         console.error('Chat history initialization failed:', error);

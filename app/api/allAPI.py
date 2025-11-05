@@ -101,7 +101,11 @@ def chat():
     loginResult=check_login()
     resLogin=json.loads(loginResult.get_data(as_text=True))["logged_in"]
     if resLogin==True:
-        response=current_app.openai.chat_with_gpt(prompt,model)       
+        model_lower = (model or "").lower()
+        if model_lower.startswith("gemini") or model_lower.startswith("models/gemini"):
+            response=current_app.genminiai.chat_with_gemini(prompt, model)
+        else:
+            response=current_app.openai.chat_with_gpt(prompt,model)       
         return jsonify(response),response['statusCode']      
     else:
         return jsonify({"error": "Unauthorized", "message": "please login"}), 401
@@ -304,12 +308,20 @@ def generate():
         # sessionDict["conversation_history"]=conversation_history
 
 
-        # 在生成器外部获取openai实例
-        openai_instance = current_app.openai
-        
-        def generate():
-            for chunk in openai_instance.chat_with_gpt_stream2(prompt,model,sessionDict):
-                yield chunk
+        # 在生成器外部获取模型实例
+        model_lower = (model or "").lower()
+        if model_lower.startswith("gemini") or model_lower.startswith("models/gemini"):
+            gemini_instance = current_app.genminiai
+
+            def generate():
+                for chunk in gemini_instance.chat_with_gemini_stream(prompt, model, sessionDict):
+                    yield chunk
+        else:
+            openai_instance = current_app.openai
+
+            def generate():
+                for chunk in openai_instance.chat_with_gpt_stream2(prompt,model,sessionDict):
+                    yield chunk
         
         return Response(generate(), mimetype='text/plain')   
     else:

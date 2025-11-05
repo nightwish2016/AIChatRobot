@@ -1,6 +1,8 @@
-import datetime
+﻿import datetime
 from typing import Optional, List, Dict
 from app.DB.SqlLiteUtil import SqlLiteUtil
+from app.session_title import SessionTitleManager
+
 
 class chatHistoryUtils:
     def __init__(self):
@@ -20,16 +22,16 @@ class chatHistoryUtils:
 
     def _generate_session_title(self, text: Optional[str]) -> str:
         if not text:
-            return "新的对话"
+            return "鏂扮殑瀵硅瘽"
         cleaned = text.strip()
         if not cleaned:
-            return "新的对话"
+            return "鏂扮殑瀵硅瘽"
         first_line = cleaned.splitlines()[0].strip()
         candidate = first_line if first_line else cleaned.replace("\n", " ").strip()
         candidate = candidate.replace("\r", " ").strip()
         if len(candidate) > 30:
             candidate = candidate[:30].rstrip() + "..."
-        return candidate or "新的对话"
+        return candidate or "鏂扮殑瀵硅瘽"
 
     def _generate_preview_text(self, text: Optional[str]) -> str:
         if not text:
@@ -57,7 +59,6 @@ class chatHistoryUtils:
                 )
                 if session_rows:
                     active_session_id = session_rows[0]["SessionId"]
-
             if not active_session_id:
                 return {"session_id": None, "messages": []}
 
@@ -109,6 +110,7 @@ class chatHistoryUtils:
 
     def list_recent_sessions(self, user_id: int, limit: int = 20) -> List[Dict[str, Optional[str]]]:
         db = SqlLiteUtil()
+        title_manager = SessionTitleManager()
         try:
             session_rows = db.query(
                 """
@@ -133,7 +135,7 @@ class chatHistoryUtils:
                     except (ValueError, TypeError, OSError):
                         last_iso = str(last_created)
 
-                title_row = db.query(
+                title_rows = db.query(
                     """
                     SELECT Role, Prompt, GptContent
                     FROM chatHistory
@@ -143,23 +145,32 @@ class chatHistoryUtils:
                         OR (Role <> 'user' AND IFNULL(GptContent, '') <> '')
                       )
                     ORDER BY Created ASC, Id ASC
-                    LIMIT 2
+                    LIMIT 6
                     """,
                     (user_id, session_id),
                 )
-                raw_title = ""
-                raw_preview = ""
-                if title_row:
-                    for row_data in title_row:
-                        if row_data["Role"] == "user" and not raw_title:
-                            raw_title = row_data.get("Prompt") or ""
-                        elif row_data["Role"] != "user" and not raw_preview:
-                            raw_preview = row_data.get("GptContent") or ""
-                    if not raw_title:
-                        first_row = title_row[0]
-                        raw_title = first_row.get("Prompt") or first_row.get("GptContent") or ""
-                title = self._generate_session_title(raw_title)
-                preview = self._generate_preview_text(raw_preview if raw_preview else raw_title)
+
+                messages_for_title: List[Dict[str, str]] = []
+                fallback_source = ""
+                first_assistant = ""
+                for row_data in title_rows:
+                    role = row_data["Role"]
+                    if role == "user":
+                        content = (row_data.get("Prompt") or "").strip()
+                        messages_for_title.append({"role": "user", "content": content})
+                        if not fallback_source and content:
+                            fallback_source = content
+                    else:
+                        content = (row_data.get("GptContent") or "").strip()
+                        messages_for_title.append({"role": "assistant", "content": content})
+                        if not first_assistant and content:
+                            first_assistant = content
+                        if not fallback_source and content:
+                            fallback_source = content
+
+                fallback_title = self._generate_session_title(fallback_source)
+                title = title_manager.ensure_title(session_id, messages_for_title, fallback=fallback_title) or fallback_title
+                preview = self._generate_preview_text(first_assistant or fallback_source)
 
                 sessions.append(
                     {
