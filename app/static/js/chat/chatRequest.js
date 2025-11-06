@@ -1,4 +1,129 @@
 let currentSessionId = null;
+const sessionTitleState = new Map();
+let titleGenerationEventsBound = false;
+
+function getSessionTitleState(sessionId) {
+    if (!sessionId) {
+        return null;
+    }
+    if (!sessionTitleState.has(sessionId)) {
+        sessionTitleState.set(sessionId, {
+            userMessageCount: 0,
+            idleTimerId: null,
+            requestInFlight: false,
+            titleGenerated: false,
+        });
+    }
+    return sessionTitleState.get(sessionId);
+}
+
+function clearTitleGenerationTimer(state) {
+    if (state && state.idleTimerId) {
+        clearTimeout(state.idleTimerId);
+        state.idleTimerId = null;
+    }
+}
+
+function maybeScheduleSessionTitleGeneration(sessionId) {
+    const state = getSessionTitleState(sessionId);
+    if (!state) {
+        return;
+    }
+    if (state.titleGenerated || state.requestInFlight) {
+        return;
+    }
+    if (state.userMessageCount < 2) {
+        clearTitleGenerationTimer(state);
+        return;
+    }
+    clearTitleGenerationTimer(state);
+    state.idleTimerId = setTimeout(() => {
+        triggerSessionTitleGeneration(sessionId, 'idle_timeout');
+    }, 10000);
+}
+
+async function triggerSessionTitleGeneration(sessionId, reason = 'manual') {
+    const state = getSessionTitleState(sessionId);
+    if (!state) {
+        return;
+    }
+    if (state.titleGenerated || state.requestInFlight || state.userMessageCount < 2) {
+        return;
+    }
+    state.requestInFlight = true;
+    clearTitleGenerationTimer(state);
+    try {
+        const response = await fetch(`/api/v1/chat/sessions/${encodeURIComponent(sessionId)}/title`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+            if (data && data.reason === 'session_not_found') {
+                state.titleGenerated = true;
+            }
+            return;
+        }
+        if (!data) {
+            return;
+        }
+        const alreadyExists = data.reason === 'already_exists';
+        if (data.generated || alreadyExists) {
+            state.titleGenerated = true;
+            if (data.generated) {
+                refreshConversationListForCurrentSession();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to generate session title:', error);
+    } finally {
+        state.requestInFlight = false;
+        if (!state.titleGenerated && state.userMessageCount >= 2) {
+            maybeScheduleSessionTitleGeneration(sessionId);
+        }
+    }
+}
+
+function handleUserMessageForTitle(sessionId) {
+    const state = getSessionTitleState(sessionId);
+    if (!state) {
+        return;
+    }
+    state.userMessageCount += 1;
+    maybeScheduleSessionTitleGeneration(sessionId);
+}
+
+function syncSessionTitleStateFromHistory(sessionId, messages = []) {
+    const state = getSessionTitleState(sessionId);
+    if (!state) {
+        return;
+    }
+    const userMessages = messages.filter(
+        (item) => (item.role || '').toLowerCase() === 'user' && (item.content || '').trim().length > 0,
+    );
+    state.userMessageCount = userMessages.length;
+    if (state.userMessageCount < 2) {
+        clearTitleGenerationTimer(state);
+    }
+}
+
+function ensureTitleGenerationEventBindings() {
+    if (titleGenerationEventsBound) {
+        return;
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && currentSessionId) {
+            triggerSessionTitleGeneration(currentSessionId, 'visibility_change');
+        }
+    });
+    window.addEventListener('blur', () => {
+        if (currentSessionId) {
+            triggerSessionTitleGeneration(currentSessionId, 'window_blur');
+        }
+    });
+    titleGenerationEventsBound = true;
+}
 
 function getHistoryContainer() {
     return document.getElementById('history');
@@ -24,6 +149,9 @@ function highlightActiveConversation(sessionId) {
 
 function setCurrentSessionId(sessionId) {
     currentSessionId = sessionId || null;
+    if (currentSessionId) {
+        getSessionTitleState(currentSessionId);
+    }
     updateGuidDisplay(currentSessionId);
     highlightActiveConversation(currentSessionId);
 }
@@ -109,7 +237,11 @@ function buildConversationItem(session) {
     button.appendChild(timeDiv);
 
     button.addEventListener('click', async () => {
+        const previousSessionId = currentSessionId;
         await loadChatHistory(session.session_id);
+        if (previousSessionId && previousSessionId !== session.session_id) {
+            triggerSessionTitleGeneration(previousSessionId, 'conversation_switch');
+        }
         highlightActiveConversation(session.session_id);
     });
 
@@ -144,6 +276,7 @@ async function loadChatHistory(sessionId = null) {
 
         const resolvedSessionId = data.session_id || sessionId || ensureSessionId();
         setCurrentSessionId(resolvedSessionId);
+        syncSessionTitleStateFromHistory(resolvedSessionId, data.messages);
 
         historyContainer.innerHTML = '';
         data.messages.forEach((item) => {
@@ -253,10 +386,15 @@ function refreshConversationListForCurrentSession() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    ensureTitleGenerationEventBindings();
     const newChatButton = document.getElementById('new-chat-button');
     if (newChatButton) {
         newChatButton.addEventListener('click', () => {
+            const previousSessionId = currentSessionId;
             startNewConversation();
+            if (previousSessionId) {
+                triggerSessionTitleGeneration(previousSessionId, 'new_chat');
+            }
             highlightActiveConversation(null);
         });
     }
@@ -282,6 +420,7 @@ async function ChatReuqest(prompt,model,guid) {
     console.log(sessionId)
 
     appendHistoryMessage('user', prompt);
+    handleUserMessageForTitle(sessionId);
     historyField.scrollTop = historyField.scrollHeight;
 
     

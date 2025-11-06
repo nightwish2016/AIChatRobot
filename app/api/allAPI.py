@@ -159,6 +159,31 @@ def chat_sessions():
     return jsonify({"sessions": sessions}), 200
 
 
+@allAPI_bp.route('/api/v1/chat/sessions/<session_id>/title', methods=['POST'])
+@limiter.limit("30 per minute,100 per hour,500 per day", key_func=user_id_key_func)
+@limiter.limit("30 per minute,100 per hour,500 per day", key_func=ip_key_func)
+def generate_chat_session_title(session_id: str):
+    loginResult = check_login()
+    resLogin = json.loads(loginResult.get_data(as_text=True))["logged_in"]
+    if not resLogin:
+        return jsonify({"error": "Unauthorized", "message": "please login"}), 401
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Unauthorized", "message": "please login"}), 401
+
+    history_util = chatHistoryUtils()
+    result = history_util.generate_title_for_session(user_id, session_id)
+
+    status_code = 200
+    if result.get("reason") == "session_not_found":
+        status_code = 404
+    elif result.get("reason") == "invalid_session":
+        status_code = 400
+
+    return jsonify(result), status_code
+
+
 
 @allAPI_bp.route('/api/v1/image', methods=['POST'])
 @limiter.limit("2 per minute,3 per hour,4 per day", key_func=lambda: "special_level_0" if session.get('user_level') == 0 else get_remote_address())

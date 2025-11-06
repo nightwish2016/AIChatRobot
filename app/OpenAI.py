@@ -206,11 +206,6 @@ class OpenAI:
                 prompt,
                 chargeStatus,
             )
-            self._ensure_session_title(
-                sessionid,
-                conversation_history,
-                fallback=prompt,
-            )
             logger.info("db call start end**********4")
             current_time2 = datetime.datetime.now()
             logger.info(current_time2)
@@ -333,11 +328,6 @@ class OpenAI:
                 GptContent,
                 prompt,
                 1,
-            )
-            self._ensure_session_title(
-                sessionid,
-                conversation_history + [{"role": "assistant", "content": finalMessages}],
-                fallback=prompt,
             )
             conversation_history.append({"role": "assistant", "content": finalMessages}) 
             redis_client.hset("conversation_models", conversationid, response_model_name)      

@@ -18,7 +18,7 @@ class SessionTitleManager:
         port = int(os.getenv("REDIS_PORT", 6379))
         db = int(os.getenv("REDIS_DB", 0))
         self.redis = redis.StrictRedis(host=host, port=port, db=db)
-        self.model = os.getenv("SESSION_TITLE_MODEL", "gpt-4o-mini")
+        self.model = os.getenv("SESSION_TITLE_MODEL", "deepseek-chat")
 
     def get_title(self, session_id: str) -> Optional[str]:
         if not session_id:
@@ -68,7 +68,7 @@ class SessionTitleManager:
                 f"{formatted}"
             )
             response = current_app.openai.openai.chat.completions.create(
-                model=self.model,
+                model=self.model,               
                 messages=[
                     {
                         "role": "system",

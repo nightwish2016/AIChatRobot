@@ -171,7 +171,7 @@
 
         .conversation-item {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             border: 1px solid transparent;
             border-radius: 10px;
@@ -197,15 +197,21 @@
             font-size: 13px;
             font-weight: 600;
             color: #202124;
-            line-height: 1.3;
-            max-height: 34px;
-            overflow: hidden;
+            line-height: 1.4;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+            max-height: none;
+            overflow: visible;
+            flex: 1;
+            min-width: 0;
         }
 
         .conversation-time {
             font-size: 11px;
             color: #5f6368;
             margin-left: 8px;
+            flex-shrink: 0;
         }
 
         .conversation-empty {

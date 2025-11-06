@@ -1,5 +1,5 @@
 ﻿import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from app.DB.SqlLiteUtil import SqlLiteUtil
 from app.session_title import SessionTitleManager
 
@@ -110,7 +110,6 @@ class chatHistoryUtils:
 
     def list_recent_sessions(self, user_id: int, limit: int = 20) -> List[Dict[str, Optional[str]]]:
         db = SqlLiteUtil()
-        title_manager = SessionTitleManager()
         try:
             session_rows = db.query(
                 """
@@ -125,6 +124,7 @@ class chatHistoryUtils:
             )
 
             sessions: List[Dict[str, Optional[str]]] = []
+            title_manager = SessionTitleManager()
             for row in session_rows:
                 session_id = row["SessionId"]
                 last_created = row["LastCreated"]
@@ -150,26 +150,30 @@ class chatHistoryUtils:
                     (user_id, session_id),
                 )
 
-                messages_for_title: List[Dict[str, str]] = []
+                user_message_count = 0
                 fallback_source = ""
                 first_assistant = ""
                 for row_data in title_rows:
                     role = row_data["Role"]
                     if role == "user":
                         content = (row_data.get("Prompt") or "").strip()
-                        messages_for_title.append({"role": "user", "content": content})
+                        if content:
+                            user_message_count += 1
                         if not fallback_source and content:
                             fallback_source = content
                     else:
                         content = (row_data.get("GptContent") or "").strip()
-                        messages_for_title.append({"role": "assistant", "content": content})
                         if not first_assistant and content:
                             first_assistant = content
                         if not fallback_source and content:
                             fallback_source = content
 
                 fallback_title = self._generate_session_title(fallback_source)
-                title = title_manager.ensure_title(session_id, messages_for_title, fallback=fallback_title) or fallback_title
+                existing_title = title_manager.get_title(session_id)
+                if existing_title:
+                    title = existing_title
+                else:
+                    title = fallback_title if user_message_count >= 2 else "\u65b0\u7684\u5bf9\u8bdd"
                 preview = self._generate_preview_text(first_assistant or fallback_source)
 
                 sessions.append(
@@ -183,6 +187,126 @@ class chatHistoryUtils:
                 )
 
             return sessions
+        finally:
+            db.cursor.close()
+            db.conn.close()
+
+    def generate_title_for_session(self, user_id: int, session_id: str) -> Dict[str, Any]:
+        db = SqlLiteUtil()
+        title_manager = SessionTitleManager()
+        try:
+            if not session_id:
+                return {
+                    "session_id": session_id,
+                    "title": None,
+                    "generated": False,
+                    "reason": "invalid_session",
+                }
+
+            existing_title = title_manager.get_title(session_id)
+            if existing_title:
+                return {
+                    "session_id": session_id,
+                    "title": existing_title,
+                    "generated": False,
+                    "reason": "already_exists",
+                }
+
+            session_exists_rows = db.query(
+                """
+                SELECT COUNT(1) AS Cnt
+                FROM chatHistory
+                WHERE UserId = ? AND SessionId = ?
+                """,
+                (user_id, session_id),
+            )
+            session_exists = session_exists_rows[0]["Cnt"] if session_exists_rows else 0
+            if session_exists == 0:
+                return {
+                    "session_id": session_id,
+                    "title": None,
+                    "generated": False,
+                    "reason": "session_not_found",
+                }
+
+            title_rows = db.query(
+                """
+                SELECT Role, Prompt, GptContent
+                FROM chatHistory
+                WHERE UserId = ? AND SessionId = ?
+                  AND (
+                    (Role = 'user' AND IFNULL(Prompt, '') <> '')
+                    OR (Role <> 'user' AND IFNULL(GptContent, '') <> '')
+                  )
+                ORDER BY Created ASC, Id ASC
+                LIMIT 6
+                """,
+                (user_id, session_id),
+            )
+
+            if not title_rows:
+                fallback_title = self._generate_session_title(None)
+                return {
+                    "session_id": session_id,
+                    "title": fallback_title,
+                    "generated": False,
+                    "reason": "no_content",
+                }
+
+            user_message_count_rows = db.query(
+                """
+                SELECT COUNT(1) AS Cnt
+                FROM chatHistory
+                WHERE UserId = ? AND SessionId = ?
+                  AND Role = 'user'
+                  AND IFNULL(Prompt, '') <> ''
+                """,
+                (user_id, session_id),
+            )
+            user_message_count = user_message_count_rows[0]["Cnt"] if user_message_count_rows else 0
+
+            messages_for_title: List[Dict[str, str]] = []
+            fallback_source = ""
+            for row_data in title_rows:
+                role = row_data["Role"]
+                if role == "user":
+                    content = (row_data.get("Prompt") or "").strip()
+                    if content:
+                        messages_for_title.append({"role": "user", "content": content})
+                        if not fallback_source:
+                            fallback_source = content
+                else:
+                    content = (row_data.get("GptContent") or "").strip()
+                    if content:
+                        messages_for_title.append({"role": "assistant", "content": content})
+                        if not fallback_source:
+                            fallback_source = content
+
+            fallback_title = self._generate_session_title(fallback_source)
+
+            if user_message_count < 2:
+                return {
+                    "session_id": session_id,
+                    "title": fallback_title,
+                    "generated": False,
+                    "reason": "insufficient_user_messages",
+                }
+
+            generated_title = title_manager.ensure_title(session_id, messages_for_title, fallback=fallback_title)
+            if not generated_title:
+                return {
+                    "session_id": session_id,
+                    "title": fallback_title,
+                    "generated": False,
+                    "reason": "generation_failed",
+                }
+
+            return {
+                "session_id": session_id,
+                "title": generated_title,
+                "generated": True,
+                "reason": "generated",
+            }
         finally:
             db.cursor.close()
             db.conn.close()

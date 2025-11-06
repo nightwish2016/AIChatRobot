@@ -204,7 +204,6 @@ class GeminiAPI:
                     1,
                 )
 
-            self._ensure_session_title(session_id, conversation_history, fallback=prompt)
             message = final_text
         except Exception as exc:
             logger.exception("Gemini chat failed: %s", exc)
@@ -279,9 +278,6 @@ class GeminiAPI:
                     prompt,
                     1,
                 )
-
-            convo_with_reply = conversation_history + [{"role": "assistant", "content": final_text}]
-            self._ensure_session_title(conversation_id, convo_with_reply, fallback=prompt)
 
             conversation_history.append({"role": "assistant", "content": final_text})
             redis_client.hset("conversation_models", conversation_id, normalized_model)
