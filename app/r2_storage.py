@@ -2,6 +2,7 @@ import boto3
 import os
 import logging
 from botocore.exceptions import ClientError, NoCredentialsError
+from boto3.s3.transfer import TransferConfig
 from typing import Optional, Tuple
 import tempfile
 import uuid
@@ -19,7 +20,8 @@ class R2Storage:
                  access_key_id: str = None, 
                  secret_access_key: str = None,
                  bucket_name: str = None,
-                 region: str = 'auto'):
+                 region: str = 'auto',
+                 transfer_config: TransferConfig = None):
         """
         初始化Cloudflare R2存储
         
@@ -35,6 +37,7 @@ class R2Storage:
         self.secret_access_key = secret_access_key or os.getenv('R2_SECRET_ACCESS_KEY')
         self.bucket_name = bucket_name or os.getenv('R2_BUCKET_NAME')
         self.region = region
+        self.transfer_config = transfer_config or self._build_transfer_config()
         
         if not all([self.account_id, self.access_key_id, self.secret_access_key, self.bucket_name]):
             raise ValueError("缺少必要的R2配置参数")
@@ -46,6 +49,21 @@ class R2Storage:
             aws_access_key_id=self.access_key_id,
             aws_secret_access_key=self.secret_access_key,
             region_name=self.region
+        )
+
+    def _build_transfer_config(self) -> TransferConfig:
+        """
+        根据环境变量构建多线程分片上传配置，降低大文件写入耗时
+        """
+        threshold_mb = max(int(os.getenv('R2_MULTIPART_THRESHOLD_MB', '8')), 5)
+        chunk_mb = max(int(os.getenv('R2_MULTIPART_CHUNK_MB', '8')), 5)
+        max_concurrency = max(int(os.getenv('R2_MAX_CONCURRENCY', '4')), 1)
+
+        return TransferConfig(
+            multipart_threshold=threshold_mb * 1024 * 1024,
+            multipart_chunksize=chunk_mb * 1024 * 1024,
+            max_concurrency=max_concurrency,
+            use_threads=max_concurrency > 1
         )
     
     def upload_file(self, file_path: str, object_key: str = None, 
@@ -80,7 +98,8 @@ class R2Storage:
                 file_path, 
                 self.bucket_name, 
                 object_key,
-                ExtraArgs=extra_args
+                ExtraArgs=extra_args,
+                Config=self.transfer_config
             )
             
             logger.info(f"文件上传成功: {object_key}")
@@ -88,6 +107,50 @@ class R2Storage:
             
         except Exception as e:
             error_msg = f"上传文件失败: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
+
+    def upload_fileobj(self, file_obj, object_key: str = None,
+                      content_type: str = None, public: bool = False) -> Tuple[bool, str]:
+        """
+        上传文件对象到R2，避免先落地临时文件
+
+        Args:
+            file_obj: 一个file-like对象
+            object_key: R2对象键
+            content_type: 内容类型
+            public: 是否公开访问
+
+        Returns:
+            (success, object_key_or_error_message)
+        """
+        try:
+            if hasattr(file_obj, 'seek'):
+                file_obj.seek(0)
+
+            if not object_key:
+                file_ext = ''
+                if hasattr(file_obj, 'name'):
+                    _, file_ext = os.path.splitext(file_obj.name)
+                object_key = f"uploads/{uuid.uuid4().hex}{file_ext}"
+
+            extra_args = {}
+            if content_type:
+                extra_args['ContentType'] = content_type
+
+            self.s3_client.upload_fileobj(
+                Fileobj=file_obj,
+                Bucket=self.bucket_name,
+                Key=object_key,
+                ExtraArgs=extra_args,
+                Config=self.transfer_config
+            )
+
+            logger.info(f"文件对象上传成功: {object_key}")
+            return True, object_key
+
+        except Exception as e:
+            error_msg = f"上传文件对象失败: {str(e)}"
             logger.error(error_msg)
             return False, error_msg
     

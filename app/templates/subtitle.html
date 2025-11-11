@@ -489,6 +489,101 @@
             font-size: 0.8em;
         }
 
+        .upload-progress {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            background: #f8fafc;
+            margin-top: 10px;
+            transition: opacity 0.3s ease;
+        }
+
+        .upload-progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            color: #5f6368;
+            margin-bottom: 8px;
+        }
+
+        .upload-progress-percent {
+            font-weight: 600;
+            color: #1a73e8;
+        }
+
+        .upload-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e8eef6;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .upload-progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 999px;
+            transition: width 0.2s ease;
+        }
+
+        .upload-progress.error .upload-progress-percent {
+            color: #c62828;
+        }
+
+        .upload-progress.error .upload-progress-bar-fill {
+            background: #f44336;
+        }
+
+        .server-processing {
+            display: none;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            border-radius: 12px;
+            background: #edf2ff;
+            border: 1px solid #d7e3ff;
+            color: #1a237e;
+        }
+
+        .server-processing.show {
+            display: flex;
+        }
+
+        .server-processing-spinner {
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            border: 3px solid rgba(26, 35, 126, 0.2);
+            border-top-color: #1a73e8;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .server-processing-text {
+            flex: 1;
+        }
+
+        .server-processing-text .title {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .server-processing-dismiss {
+            background: transparent;
+            border: none;
+            color: #1a73e8;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -951,6 +1046,23 @@
                                     <div class="upload-hint">支持格式: MP4, AVI, MOV, MKV, WMV, FLV, WEBM, MP3, WAV, M4A, AAC, OGG, FLAC</div>
                                     <input type="file" id="fileInput" class="file-input" accept=".mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.mp3,.wav,.m4a,.aac,.ogg,.flac">
                                 </div>
+                                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                                    <div class="upload-progress-header">
+                                        <span id="uploadProgressLabel">等待上传</span>
+                                        <span class="upload-progress-percent" id="uploadProgressPercent">0%</span>
+                                    </div>
+                                    <div class="upload-progress-bar">
+                                        <div class="upload-progress-bar-fill" id="uploadProgressFill"></div>
+                                    </div>
+                                </div>
+                                <div class="server-processing" id="serverProcessingIndicator">
+                                    <div class="server-processing-spinner"></div>
+                                    <div class="server-processing-text">
+                                        <div class="title">后台处理中</div>
+                                        <div class="desc" id="serverProcessingText">已上传，正在保存到云端...</div>
+                                    </div>
+                                    <button type="button" class="server-processing-dismiss" onclick="hideServerProcessingIndicator()">我知道了</button>
+                                </div>
 
                                 <div class="options" id="options">
                                     <div class="option-group">
@@ -1004,6 +1116,79 @@
         let downloadFilename = null;
         let isProcessingClick = false; // 防止重复点击
 
+        function getUploadProgressElements() {
+            const container = document.getElementById('uploadProgress');
+            const bar = document.getElementById('uploadProgressFill');
+            const percentText = document.getElementById('uploadProgressPercent');
+            const label = document.getElementById('uploadProgressLabel');
+            if (!container || !bar || !percentText || !label) {
+                return null;
+            }
+            return { container, bar, percentText, label };
+        }
+
+        function resetUploadProgress(hide = false) {
+            const elements = getUploadProgressElements();
+            if (!elements) {
+                return;
+            }
+            const { container, bar, percentText, label } = elements;
+            bar.style.width = '0%';
+            percentText.textContent = '0%';
+            label.textContent = '等待上传';
+            container.classList.remove('error');
+            if (hide) {
+                container.style.display = 'none';
+            }
+        }
+
+        function updateUploadProgress(percent, text, options = {}) {
+            const elements = getUploadProgressElements();
+            if (!elements) {
+                return;
+            }
+            const { container, bar, percentText, label } = elements;
+            container.style.display = 'block';
+            container.classList.toggle('error', !!options.isError);
+            if (typeof percent === 'number' && Number.isFinite(percent)) {
+                const safePercent = Math.min(100, Math.max(0, Math.round(percent)));
+                bar.style.width = `${safePercent}%`;
+                percentText.textContent = `${safePercent}%`;
+            }
+            if (text) {
+                label.textContent = text;
+            }
+        }
+
+        function completeUploadProgress(message = '上传完成') {
+            updateUploadProgress(100, message);
+            setTimeout(() => resetUploadProgress(true), 1500);
+        }
+
+        function failUploadProgress(message = '上传失败') {
+            updateUploadProgress(null, message, { isError: true });
+        }
+
+        function setServerProcessingState(isActive, message = '') {
+            const indicator = document.getElementById('serverProcessingIndicator');
+            const textEl = document.getElementById('serverProcessingText');
+            if (!indicator || !textEl) {
+                return;
+            }
+            if (message) {
+                textEl.textContent = message;
+            }
+            if (isActive) {
+                indicator.classList.add('show');
+            } else {
+                indicator.classList.remove('show');
+            }
+        }
+
+        function hideServerProcessingIndicator() {
+            setServerProcessingState(false);
+        }
+
         // 货币切换功能
         function toggleCurrency() {
             const currentCurrency = new URLSearchParams(window.location.search).get('currency') || 'CNY';
@@ -1047,6 +1232,8 @@
             if (fileInput) {
                 fileInput.addEventListener('change', handleFileSelect);
             }
+            resetUploadProgress(true);
+            hideServerProcessingIndicator();
             
 
             
@@ -1177,36 +1364,98 @@
             downloadFilename = null;
             document.getElementById('result').style.display = 'none';
             // 保持options始终显示
+            hideServerProcessingIndicator();
 
             showStatus('正在上传文件...', 'info');
 
             const formData = new FormData();
             formData.append('file', file);
 
-            fetch('/api/subtitle/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(errorData => {
-                        throw new Error(errorData.message || '上传失败');
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
+            resetUploadProgress(true);
+            updateUploadProgress(0, '准备上传...');
+
+            try {
+                const data = await uploadWithProgress(formData);
                 if (data.success) {
                     uploadedFilePath = data.file_path;
                     useR2Storage = data.use_r2 || false;
+                    completeUploadProgress('上传完成');
                     showStatus(`文件上传成功: ${data.original_filename}`, 'success');
+                    hideServerProcessingIndicator();
                     // 选项区域已经默认显示，无需再次设置
                 } else {
+                    failUploadProgress(data.message || '上传失败');
                     showStatus(data.message, 'error');
+                    hideServerProcessingIndicator();
                 }
-            })
-            .catch(error => {
+            } catch (error) {
+                failUploadProgress(error.message || '上传失败');
                 showStatus('上传失败: ' + error.message, 'error');
+                hideServerProcessingIndicator();
+            }
+        }
+
+        function uploadWithProgress(formData) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/subtitle/upload', true);
+
+                xhr.upload.addEventListener('loadstart', () => {
+                    updateUploadProgress(0, '开始上传...');
+                    hideServerProcessingIndicator();
+                    showStatus('正在上传文件...', 'info');
+                });
+
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        const percent = (event.loaded / event.total) * 100;
+                        if (percent >= 100) {
+                            updateUploadProgress(100, '上传完成，等待服务器确认...');
+                            showStatus('上传完成，等待服务器确认...', 'info');
+                            setServerProcessingState(true, '文件已上传，正在同步到云端...');
+                        } else {
+                            updateUploadProgress(percent, '正在上传...');
+                            showStatus(`正在上传文件... ${Math.round(percent)}%`, 'info');
+                        }
+                    } else {
+                        updateUploadProgress(null, '正在上传...');
+                        showStatus('正在上传文件...', 'info');
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    showStatus('上传完成，等待服务器响应...', 'info');
+                    hideServerProcessingIndicator();
+                    let responseData = null;
+                    try {
+                        responseData = JSON.parse(xhr.responseText || '{}');
+                    } catch (error) {
+                        responseData = null;
+                    }
+
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        if (responseData) {
+                            resolve(responseData);
+                        } else {
+                            reject(new Error('解析上传响应失败'));
+                        }
+                    } else {
+                        const message = responseData && responseData.message ? responseData.message : '上传失败';
+                        reject(new Error(message));
+                    }
+                });
+
+                xhr.addEventListener('error', () => {
+                    hideServerProcessingIndicator();
+                    reject(new Error('网络错误，请稍后重试'));
+                });
+
+                xhr.addEventListener('abort', () => {
+                    hideServerProcessingIndicator();
+                    reject(new Error('上传已取消'));
+                });
+
+                xhr.send(formData);
             });
         }
 
@@ -1361,6 +1610,7 @@
             uploadedFilePath = null;
             downloadUrl = null;
             downloadFilename = null;
+            resetUploadProgress(true);
             
             // 隐藏结果区域，保持选项区域显示
             document.getElementById('result').style.display = 'none';

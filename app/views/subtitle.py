@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, send_file, render_template, sessi
 import os
 import uuid
 import json
+import time
 from werkzeug.utils import secure_filename
 from app.subtitle_extractor import SubtitleExtractor
 from ..UserUtils import UserUtils
@@ -88,6 +89,8 @@ def upload_video():
             logger.warning(f"R2存储初始化失败，使用本地存储: {str(e)}")
             use_r2 = False
         
+        upload_start = time.perf_counter()
+
         if use_r2:
             # 直接将Flask的文件流写入R2，避免额外的磁盘落地
             file_ext = file.filename.rsplit('.', 1)[1].lower()
@@ -103,18 +106,25 @@ def upload_video():
                 content_type=file.content_type
             )
 
+            duration_ms = round((time.perf_counter() - upload_start) * 1000, 2)
+
             if success:
-                logger.info(f"文件上传到R2成功: {result}")
+                logger.info(f"文件上传到R2成功: {result}，耗时 {duration_ms} ms")
                 return jsonify({
                     'success': True,
                     'message': '文件上传成功',
                     'file_path': result,  # R2对象键
                     'original_filename': file.filename,
-                    'use_r2': True
+                    'use_r2': True,
+                    'upload_duration_ms': duration_ms
                 })
             else:
-                logger.error(f"上传到R2失败: {result}")
-                return jsonify({'success': False, 'message': f'上传失败: {result}'}), 500
+                logger.error(f"上传到R2失败: {result}，耗时 {duration_ms} ms")
+                return jsonify({
+                    'success': False,
+                    'message': f'上传失败: {result}',
+                    'upload_duration_ms': duration_ms
+                }), 500
         else:
             # 本地存储
             file_ext = file.filename.rsplit('.', 1)[1].lower()
@@ -125,14 +135,16 @@ def upload_video():
             file_path = os.path.join(upload_folder, unique_filename)
             file.save(file_path)
             
-            logger.info(f"文件上传成功: {file_path}")
+            duration_ms = round((time.perf_counter() - upload_start) * 1000, 2)
+            logger.info(f"文件上传成功: {file_path}，耗时 {duration_ms} ms")
             
             return jsonify({
                 'success': True,
                 'message': '文件上传成功',
                 'file_path': file_path,
                 'original_filename': file.filename,
-                'use_r2': False
+                'use_r2': False,
+                'upload_duration_ms': duration_ms
             })
         
     except Exception as e:
