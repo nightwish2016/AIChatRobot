@@ -89,27 +89,20 @@ def upload_video():
             use_r2 = False
         
         if use_r2:
-            # 保存到临时文件然后上传到R2
-            import tempfile
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                file.save(temp_file.name)
-                temp_path = temp_file.name
-            
-            # 生成唯一文件名
+            # 直接将Flask的文件流写入R2，避免额外的磁盘落地
             file_ext = file.filename.rsplit('.', 1)[1].lower()
             unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
             object_key = f"uploads/{unique_filename}"
-            
-            # 上传到R2
-            success, result = r2_storage.upload_file(
-                temp_path, 
+
+            if hasattr(file.stream, 'seek'):
+                file.stream.seek(0)
+
+            success, result = r2_storage.upload_fileobj(
+                file_obj=file.stream,
                 object_key=object_key,
                 content_type=file.content_type
             )
-            
-            # 清理临时文件
-            os.unlink(temp_path)
-            
+
             if success:
                 logger.info(f"文件上传到R2成功: {result}")
                 return jsonify({
