@@ -43,6 +43,7 @@ insert into chatPrice(model,inputPrice,outputPrice) values('gpt-4-turbo-2024-04-
 insert into chatPrice(model,inputPrice,outputPrice) values('gpt-4o-2024-05-13',5,15);
 insert into chatPrice(model,inputPrice,outputPrice) values('gpt-4o-2024-08-06',2.5,10);
 insert into chatPrice(model,inputPrice,outputPrice) values('gpt-4o-mini-2024-07-18',0.15,0.6);
+insert into chatPrice(model,inputPrice,outputPrice) values('gemini-2.5-flash',0.3,2.5);
 
 insert into imagePrice(model,quality,resolution,price) values('dall-e-3','Standard','1024x1024',0.04);
 insert into imagePrice(model,quality,resolution,price)  values('dall-e-3','Standard','1024x1079',0.08);
