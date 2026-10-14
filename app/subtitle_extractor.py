@@ -25,6 +25,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 class SubtitleExtractor:
+    MAX_OPENAI_AUDIO_BYTES = 24 * 1024 * 1024
+
     def __init__(self, upload_folder: str = "uploads", output_folder: str = "subtitles", openai_api_key: str = None, use_r2: bool = True):
         self.upload_folder = upload_folder
         self.output_folder = output_folder
@@ -226,13 +228,13 @@ class SubtitleExtractor:
         try:
             if FFMPEG_AVAILABLE:
                 stream = ffmpeg.input(video_path)
-                stream = ffmpeg.output(stream, audio_path, acodec='pcm_s16le', ac=1, ar=16000)
+                stream = ffmpeg.output(stream, audio_path, vn=None, acodec='libmp3lame', ac=1, ar=16000, audio_bitrate='48k')
                 ffmpeg.run(stream, overwrite_output=True, quiet=True)
             else:
                 # 使用subprocess调用ffmpeg
                 result = subprocess.run([
-                    'ffmpeg', '-i', video_path, '-acodec', 'pcm_s16le',
-                    '-ac', '1', '-ar', '16000', audio_path, '-y'
+                    'ffmpeg', '-i', video_path, '-vn', '-acodec', 'libmp3lame',
+                    '-ac', '1', '-ar', '16000', '-b:a', '48k', audio_path, '-y'
                 ], capture_output=True)
                 if result.returncode != 0:
                     raise Exception(f"ffmpeg failed: {result.stderr.decode()}")
@@ -241,6 +243,41 @@ class SubtitleExtractor:
             
         except Exception as e:
             logger.error(f"提取音频时出错: {str(e)}")
+            return False
+
+    def is_supported_audio_file(self, file_path: str) -> bool:
+        return os.path.splitext(file_path)[1].lower() in self.supported_audio_formats
+
+    def should_transcribe_directly(self, file_path: str) -> bool:
+        return os.path.getsize(file_path) <= self.MAX_OPENAI_AUDIO_BYTES
+
+    def compress_audio_for_transcription(self, input_path: str, output_path: str) -> bool:
+        try:
+            logger.info(f"音频文件超过接口限制，开始压缩: {input_path}")
+            if FFMPEG_AVAILABLE:
+                stream = ffmpeg.input(input_path)
+                stream = ffmpeg.output(stream, output_path, vn=None, acodec='libmp3lame', ac=1, ar=16000, audio_bitrate='48k')
+                ffmpeg.run(stream, overwrite_output=True, quiet=True)
+            else:
+                result = subprocess.run([
+                    'ffmpeg', '-i', input_path, '-vn', '-acodec', 'libmp3lame',
+                    '-ac', '1', '-ar', '16000', '-b:a', '48k', output_path, '-y'
+                ], capture_output=True)
+                if result.returncode != 0:
+                    raise Exception(f"ffmpeg failed: {result.stderr.decode()}")
+
+            if not os.path.exists(output_path) or os.path.getsize(output_path) <= 0:
+                return False
+
+            output_size = os.path.getsize(output_path)
+            logger.info(f"音频压缩完成: {output_path}, size={output_size}")
+            if output_size > self.MAX_OPENAI_AUDIO_BYTES:
+                logger.error(f"压缩后的音频仍超过接口限制: {output_size}")
+                return False
+            return True
+
+        except Exception as e:
+            logger.error(f"压缩音频时出错: {str(e)}")
             return False
     
     def process_video_subtitles(self, video_path: str, output_format: str = 'srt', language: str = 'zh') -> dict:
@@ -339,20 +376,35 @@ class SubtitleExtractor:
                     
             else:
                 logger.info("未检测到字幕，开始语音识别...")
+                is_audio_file = self.is_supported_audio_file(video_path)
                 
                 if self.use_r2:
-                    # 使用临时文件
-                    with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_audio_file:
-                        temp_audio = temp_audio_file.name
+                    temp_audio = None
+                    if is_audio_file:
+                        if self.should_transcribe_directly(video_path):
+                            audio_for_transcription = video_path
+                            audio_ready = True
+                            logger.info("检测到未超限音频文件，直接使用原始音频进行语音识别")
+                        else:
+                            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_audio_file:
+                                temp_audio = temp_audio_file.name
+                            audio_for_transcription = temp_audio
+                            audio_ready = self.compress_audio_for_transcription(video_path, temp_audio)
+                    else:
+                        # 使用临时文件
+                        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_audio_file:
+                            temp_audio = temp_audio_file.name
+                        audio_for_transcription = temp_audio
+                        audio_ready = self.extract_audio_from_video(video_path, temp_audio)
                     
-                    if self.extract_audio_from_video(video_path, temp_audio):
+                    if audio_ready:
                         base_name = os.path.splitext(os.path.basename(video_path))[0]
                         
                         # 使用临时文件生成字幕
                         with tempfile.NamedTemporaryFile(suffix=f'.{output_format}', delete=False) as temp_subtitle_file:
                             final_output = temp_subtitle_file.name
                         
-                        if self.generate_subtitles_with_whisper(temp_audio, final_output, language):
+                        if self.generate_subtitles_with_whisper(audio_for_transcription, final_output, language):
                             # 上传到R2
                             success, object_key = self.r2_storage.upload_file(
                                 final_output,
@@ -377,21 +429,34 @@ class SubtitleExtractor:
                             result['message'] = '语音识别生成字幕失败'
                         
                         # 清理临时文件
-                        if os.path.exists(temp_audio):
+                        if temp_audio and os.path.exists(temp_audio):
                             os.remove(temp_audio)
                         if os.path.exists(final_output):
                             os.remove(final_output)
                     else:
                         result['message'] = '提取音频失败'
                 else:
-                    # 本地存储
-                    temp_audio = os.path.join(self.output_folder, f"temp_{os.path.basename(video_path)}.wav")
+                    if is_audio_file:
+                        if self.should_transcribe_directly(video_path):
+                            temp_audio = None
+                            audio_for_transcription = video_path
+                            audio_ready = True
+                            logger.info("检测到未超限音频文件，直接使用原始音频进行语音识别")
+                        else:
+                            temp_audio = os.path.join(self.output_folder, f"temp_{os.path.splitext(os.path.basename(video_path))[0]}.mp3")
+                            audio_for_transcription = temp_audio
+                            audio_ready = self.compress_audio_for_transcription(video_path, temp_audio)
+                    else:
+                        # 本地存储
+                        temp_audio = os.path.join(self.output_folder, f"temp_{os.path.splitext(os.path.basename(video_path))[0]}.mp3")
+                        audio_for_transcription = temp_audio
+                        audio_ready = self.extract_audio_from_video(video_path, temp_audio)
                     
-                    if self.extract_audio_from_video(video_path, temp_audio):
+                    if audio_ready:
                         base_name = os.path.splitext(os.path.basename(video_path))[0]
                         final_output = os.path.join(self.output_folder, f"{base_name}.{output_format}")
                         
-                        if self.generate_subtitles_with_whisper(temp_audio, final_output, language):
+                        if self.generate_subtitles_with_whisper(audio_for_transcription, final_output, language):
                             result['processing_type'] = 'speech_recognition'
                             result['success'] = True
                             result['message'] = '成功通过语音识别生成字幕'
@@ -399,7 +464,7 @@ class SubtitleExtractor:
                         else:
                             result['message'] = '语音识别生成字幕失败'
                         
-                        if os.path.exists(temp_audio):
+                        if temp_audio and os.path.exists(temp_audio):
                             os.remove(temp_audio)
                     else:
                         result['message'] = '提取音频失败'
