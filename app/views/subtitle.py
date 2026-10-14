@@ -1,8 +1,14 @@
-from flask import Blueprint, request, jsonify, send_file, render_template, session
+from flask import Blueprint, request, jsonify, send_file, render_template, session, copy_current_request_context
 import os
 import uuid
 import json
+import tempfile
 import time
+import fcntl
+import glob
+from contextlib import contextmanager
+from functools import lru_cache
+from threading import Thread
 from werkzeug.utils import secure_filename
 from app.subtitle_extractor import SubtitleExtractor
 from ..UserUtils import UserUtils
@@ -11,12 +17,58 @@ import logging
 from app.chatHistoryUtils import chatHistoryUtils
 from app.r2_storage import R2Storage
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('log')
 
 subtitleview_bp = Blueprint('subtitle', __name__)
 
 # 支持的视频格式
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'webm', 'mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'}
+MAX_SUBTITLE_UPLOAD_BYTES = 5 * 1024 * 1024 * 1024
+CLIENT_UPLOAD_PART_BYTES = 1024 * 1024
+R2_UPLOAD_PART_BYTES = 8 * 1024 * 1024
+SUBTITLE_UPLOAD_STAGE_FOLDER = os.path.join(tempfile.gettempdir(), 'subtitle_uploads')
+
+@lru_cache(maxsize=1)
+def _get_upload_storage() -> R2Storage:
+    return R2Storage()
+
+def _upload_stage_paths(upload_token):
+    return (
+        os.path.join(SUBTITLE_UPLOAD_STAGE_FOLDER, f'{upload_token}.json'),
+        os.path.join(SUBTITLE_UPLOAD_STAGE_FOLDER, f'{upload_token}.part')
+    )
+
+def _load_upload_metadata(upload_token):
+    metadata_path, _ = _upload_stage_paths(upload_token)
+    with open(metadata_path, 'r', encoding='utf-8') as metadata_file:
+        return json.load(metadata_file)
+
+def _save_upload_metadata(upload_token, metadata):
+    os.makedirs(SUBTITLE_UPLOAD_STAGE_FOLDER, exist_ok=True)
+    metadata_path, _ = _upload_stage_paths(upload_token)
+    temp_metadata_path = f'{metadata_path}.tmp'
+    with open(temp_metadata_path, 'w', encoding='utf-8') as metadata_file:
+        json.dump(metadata, metadata_file)
+    os.replace(temp_metadata_path, metadata_path)
+
+def _cleanup_upload_stage(upload_token):
+    for stage_path in _upload_stage_paths(upload_token):
+        if os.path.exists(stage_path):
+            os.unlink(stage_path)
+    for chunk_path in glob.glob(
+        os.path.join(SUBTITLE_UPLOAD_STAGE_FOLDER, f'{upload_token}.chunk-*')
+    ):
+        os.unlink(chunk_path)
+
+@contextmanager
+def _upload_stage_lock(upload_token: str):
+    metadata_path, _ = _upload_stage_paths(upload_token)
+    with open(f'{metadata_path}.lock', 'a', encoding='utf-8') as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -41,6 +93,232 @@ def subtitle_page():
                              user_email=session.get('user_email', ''))
     else:
         return render_template('subtitle.html')
+
+@subtitleview_bp.route('/api/subtitle/upload-initiate', methods=['POST'])
+def initiate_subtitle_upload():
+    """创建R2分片上传任务。"""
+    try:
+        login_result = check_login()
+        logged_in = json.loads(login_result.get_data(as_text=True))["logged_in"]
+        if not logged_in:
+            return jsonify({'success': False, 'message': '请先登录'}), 401
+
+        user_info = UserUtils().getUserInfo(session['user_id'])
+        balance = round(user_info['balance'], 2)
+        if balance <= 0:
+            return jsonify({
+                'success': False,
+                'message': f'当前余额: ¥{balance}，余额不足无法使用字幕提取功能'
+            }), 402
+        if user_info['activate'] == 0:
+            return jsonify({'success': False, 'message': '您的账户尚未激活'}), 402
+
+        data = request.get_json(silent=True) or {}
+        filename = data.get('filename', '')
+        file_size = data.get('file_size')
+        content_type = data.get('content_type') or 'application/octet-stream'
+
+        if not allowed_file(filename):
+            return jsonify({'success': False, 'message': '不支持的文件格式'}), 400
+        if not isinstance(file_size, int) or file_size <= 0:
+            return jsonify({'success': False, 'message': '文件大小无效'}), 400
+        if file_size > MAX_SUBTITLE_UPLOAD_BYTES:
+            return jsonify({'success': False, 'message': '文件超过5 GB，无法上传'}), 413
+
+        file_ext = filename.rsplit('.', 1)[1].lower()
+        object_key = f"uploads/{uuid.uuid4().hex}.{file_ext}"
+        r2_storage = R2Storage()
+        previous_token = session.get('subtitle_pending_upload_token')
+        if previous_token:
+            try:
+                previous_metadata = _load_upload_metadata(previous_token)
+                r2_storage.abort_multipart_upload(
+                    previous_metadata['object_key'],
+                    previous_metadata['upload_id']
+                )
+            except (FileNotFoundError, KeyError, json.JSONDecodeError):
+                pass
+            _cleanup_upload_stage(previous_token)
+
+        success, upload_id = r2_storage.create_multipart_upload(
+            object_key=object_key,
+            content_type=content_type
+        )
+        if not success:
+            return jsonify({'success': False, 'message': upload_id}), 500
+
+        upload_token = uuid.uuid4().hex
+        _save_upload_metadata(upload_token, {
+            'object_key': object_key,
+            'upload_id': upload_id,
+            'expected_size': file_size,
+            'received_size': 0,
+            'received_parts': [],
+            'user_id': session['user_id'],
+            'r2_parts': []
+        })
+        session['subtitle_pending_upload_token'] = upload_token
+        return jsonify({
+            'success': True,
+            'file_path': object_key,
+            'original_filename': filename,
+            'part_size': CLIENT_UPLOAD_PART_BYTES,
+            'concurrency': 3,
+            'use_r2': True
+        })
+    except Exception as e:
+        logger.exception("创建字幕分片上传失败")
+        return jsonify({'success': False, 'message': f'创建上传任务失败: {str(e)}'}), 500
+
+@subtitleview_bp.route('/api/subtitle/upload-part', methods=['PUT'])
+def upload_subtitle_part():
+    """上传一个小于Cloudflare限制的文件分片。"""
+    try:
+        if 'user_id' not in session or 'user_email' not in session:
+            return jsonify({'success': False, 'message': '请先登录'}), 401
+
+        upload_token = session.get('subtitle_pending_upload_token')
+        part_number = request.args.get('part_number', type=int)
+        if not upload_token:
+            return jsonify({'success': False, 'message': '上传任务无效或已过期'}), 400
+
+        if not part_number or part_number < 1:
+            return jsonify({'success': False, 'message': '分片编号无效'}), 400
+        if request.content_length is None or request.content_length > CLIENT_UPLOAD_PART_BYTES:
+            return jsonify({'success': False, 'message': '分片大小无效'}), 400
+        part_data = request.get_data(cache=False)
+        with _upload_stage_lock(upload_token):
+            try:
+                metadata = _load_upload_metadata(upload_token)
+            except (FileNotFoundError, json.JSONDecodeError):
+                return jsonify({'success': False, 'message': '上传任务无效或已过期'}), 400
+            if metadata.get('user_id') != session['user_id']:
+                return jsonify({'success': False, 'message': '上传任务无效或已过期'}), 400
+            expected_size = metadata['expected_size']
+            expected_parts = (expected_size + CLIENT_UPLOAD_PART_BYTES - 1) // CLIENT_UPLOAD_PART_BYTES
+            if part_number > expected_parts:
+                return jsonify({'success': False, 'message': '分片编号无效'}), 400
+            expected_part_size = min(
+                CLIENT_UPLOAD_PART_BYTES,
+                expected_size - ((part_number - 1) * CLIENT_UPLOAD_PART_BYTES)
+            )
+            if len(part_data) != expected_part_size:
+                return jsonify({'success': False, 'message': '分片大小无效'}), 400
+
+            chunk_path = os.path.join(SUBTITLE_UPLOAD_STAGE_FOLDER, f'{upload_token}.chunk-{part_number}')
+            if part_number not in metadata['received_parts']:
+                with open(chunk_path, 'wb') as chunk_file:
+                    chunk_file.write(part_data)
+                metadata['received_parts'].append(part_number)
+                metadata['received_size'] += len(part_data)
+                _save_upload_metadata(upload_token, metadata)
+
+            chunks_per_r2_part = R2_UPLOAD_PART_BYTES // CLIENT_UPLOAD_PART_BYTES
+            r2_part_number = ((part_number - 1) // chunks_per_r2_part) + 1
+            first_chunk = (r2_part_number - 1) * chunks_per_r2_part + 1
+            group_chunks = list(range(first_chunk, min(first_chunk + chunks_per_r2_part, expected_parts + 1)))
+            already_uploaded = any(part['PartNumber'] == r2_part_number for part in metadata['r2_parts'])
+            if not already_uploaded and all(chunk in metadata['received_parts'] for chunk in group_chunks):
+                group_data = []
+                group_paths = []
+                for chunk in group_chunks:
+                    group_path = os.path.join(SUBTITLE_UPLOAD_STAGE_FOLDER, f'{upload_token}.chunk-{chunk}')
+                    with open(group_path, 'rb') as chunk_file:
+                        group_data.append(chunk_file.read())
+                    group_paths.append(group_path)
+                success, etag = _get_upload_storage().upload_part(
+                    object_key=metadata['object_key'],
+                    upload_id=metadata['upload_id'],
+                    part_number=r2_part_number,
+                    data=b''.join(group_data)
+                )
+                if not success:
+                    return jsonify({'success': False, 'message': etag}), 500
+                metadata['r2_parts'].append({'PartNumber': r2_part_number, 'ETag': etag})
+                _save_upload_metadata(upload_token, metadata)
+                for group_path in group_paths:
+                    os.unlink(group_path)
+        return jsonify({'success': True, 'part_number': part_number})
+    except Exception as e:
+        logger.exception("上传字幕文件分片失败")
+        return jsonify({'success': False, 'message': f'上传分片失败: {str(e)}'}), 500
+
+@subtitleview_bp.route('/api/subtitle/upload-complete', methods=['POST'])
+def complete_subtitle_upload():
+    """合并R2分片并校验最终文件。"""
+    try:
+        login_result = check_login()
+        logged_in = json.loads(login_result.get_data(as_text=True))["logged_in"]
+        if not logged_in:
+            return jsonify({'success': False, 'message': '请先登录'}), 401
+
+        upload_token = session.get('subtitle_pending_upload_token')
+        if not upload_token:
+            return jsonify({'success': False, 'message': '上传任务无效或已过期'}), 400
+
+        try:
+            metadata = _load_upload_metadata(upload_token)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return jsonify({'success': False, 'message': '上传任务无效或已过期'}), 400
+
+        object_key = metadata['object_key']
+        expected_size = metadata['expected_size']
+        if metadata['received_size'] != expected_size or not metadata['r2_parts']:
+            return jsonify({'success': False, 'message': '分片数量不完整'}), 400
+
+        r2_storage = R2Storage()
+        success, result = r2_storage.complete_multipart_upload(
+            object_key=object_key,
+            upload_id=metadata['upload_id'],
+            parts=sorted(metadata['r2_parts'], key=lambda part: part['PartNumber'])
+        )
+        if not success:
+            return jsonify({'success': False, 'message': result}), 500
+
+        actual_size = r2_storage.get_file_size(object_key)
+        if actual_size is None:
+            return jsonify({'success': False, 'message': '云端未找到上传文件'}), 400
+        if actual_size != expected_size:
+            r2_storage.delete_file(object_key)
+            return jsonify({
+                'success': False,
+                'message': f'文件上传不完整（{actual_size}/{expected_size} 字节）'
+            }), 400
+
+        session['subtitle_upload_key'] = object_key
+        session.pop('subtitle_pending_upload_token', None)
+        _cleanup_upload_stage(upload_token)
+        logger.info(f"字幕文件分片上传R2成功: {object_key}, size={actual_size}")
+        return jsonify({'success': True, 'message': '文件上传成功'})
+    except Exception as e:
+        logger.exception("确认字幕上传失败")
+        return jsonify({'success': False, 'message': f'确认上传失败: {str(e)}'}), 500
+
+@subtitleview_bp.route('/api/subtitle/upload-abort', methods=['POST'])
+def abort_subtitle_upload():
+    """取消当前R2分片上传任务。"""
+    try:
+        login_result = check_login()
+        logged_in = json.loads(login_result.get_data(as_text=True))["logged_in"]
+        if not logged_in:
+            return jsonify({'success': False, 'message': '请先登录'}), 401
+
+        upload_token = session.get('subtitle_pending_upload_token')
+        if upload_token:
+            try:
+                metadata = _load_upload_metadata(upload_token)
+                R2Storage().abort_multipart_upload(
+                    metadata['object_key'],
+                    metadata['upload_id']
+                )
+            except (FileNotFoundError, KeyError, json.JSONDecodeError):
+                pass
+            _cleanup_upload_stage(upload_token)
+        session.pop('subtitle_pending_upload_token', None)
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.exception("取消字幕上传失败")
+        return jsonify({'success': False, 'message': f'取消上传失败: {str(e)}'}), 500
 
 @subtitleview_bp.route('/api/subtitle/upload', methods=['POST'])
 def upload_video():
@@ -92,23 +370,29 @@ def upload_video():
         upload_start = time.perf_counter()
 
         if use_r2:
-            # 直接将Flask的文件流写入R2，避免额外的磁盘落地
             file_ext = file.filename.rsplit('.', 1)[1].lower()
             unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
             object_key = f"uploads/{unique_filename}"
+            temp_path = None
 
-            if hasattr(file.stream, 'seek'):
-                file.stream.seek(0)
+            try:
+                with tempfile.NamedTemporaryFile(suffix=f'.{file_ext}', delete=False) as temp_file:
+                    temp_path = temp_file.name
+                    file.save(temp_file)
 
-            success, result = r2_storage.upload_fileobj(
-                file_obj=file.stream,
-                object_key=object_key,
-                content_type=file.content_type
-            )
+                success, result = r2_storage.upload_file(
+                    file_path=temp_path,
+                    object_key=object_key,
+                    content_type=file.content_type
+                )
+            finally:
+                if temp_path and os.path.exists(temp_path):
+                    os.unlink(temp_path)
 
             duration_ms = round((time.perf_counter() - upload_start) * 1000, 2)
 
             if success:
+                session['subtitle_upload_key'] = result
                 logger.info(f"文件上传到R2成功: {result}，耗时 {duration_ms} ms")
                 return jsonify({
                     'success': True,
@@ -148,11 +432,56 @@ def upload_video():
             })
         
     except Exception as e:
-        logger.error(f"文件上传失败: {str(e)}")
+        logger.exception("文件上传失败")
         return jsonify({'success': False, 'message': f'上传失败: {str(e)}'}), 500
 
 @subtitleview_bp.route('/api/subtitle/process', methods=['POST'])
 def process_subtitle():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '请先登录'}), 401
+    request.get_json(silent=True)
+    task_id = uuid.uuid4().hex
+    user_id = session['user_id']
+    task_token = f'process-{task_id}'
+    _save_upload_metadata(task_token, {
+        'user_id': user_id, 'status': 'processing'
+    })
+
+    @copy_current_request_context
+    def run_processing():
+        try:
+            result = _process_subtitle()
+            response = result[0] if isinstance(result, tuple) else result
+            payload = response.get_json()
+        except Exception:
+            logger.exception('后台字幕处理失败')
+            payload = {'success': False, 'message': '字幕处理失败，请稍后重试'}
+        _save_upload_metadata(task_token, {
+            'user_id': user_id, 'status': 'complete', 'result': payload
+        })
+
+    Thread(target=run_processing, daemon=True).start()
+    return jsonify({'success': True, 'task_id': task_id, 'status': 'processing'}), 202
+
+@subtitleview_bp.route('/api/subtitle/process-status/<task_id>', methods=['GET'])
+def subtitle_process_status(task_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '请先登录'}), 401
+    if len(task_id) != 32 or any(character not in '0123456789abcdef' for character in task_id):
+        return jsonify({'success': False, 'message': '任务不存在'}), 404
+    try:
+        task = _load_upload_metadata(f'process-{task_id}')
+    except (FileNotFoundError, json.JSONDecodeError):
+        return jsonify({'success': False, 'message': '任务不存在'}), 404
+    if task['user_id'] != session['user_id']:
+        return jsonify({'success': False, 'message': '任务不存在'}), 404
+    response = jsonify({
+        'success': True, 'status': task['status'], 'result': task.get('result')
+    })
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+def _process_subtitle():
     """处理视频字幕"""
     try:
         # 检查登录状态
@@ -180,7 +509,7 @@ def process_subtitle():
                 "message": "您的账户尚未激活，请通过邮件链接激活账户"
             }), 402
         
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         file_path = data.get('file_path')
         output_format = data.get('output_format', 'srt')
         language = data.get('language', 'zh')
@@ -188,11 +517,16 @@ def process_subtitle():
         
         # 检查文件是否存在（本地文件或R2文件）
         if use_r2:
+            if file_path != session.get('subtitle_upload_key'):
+                return jsonify({'success': False, 'message': '上传文件无效或已过期'}), 400
             # R2文件，需要先下载到本地
             try:
+                file_suffix = os.path.splitext(file_path or '')[1].lower()
+                if file_suffix not in {f'.{ext}' for ext in ALLOWED_EXTENSIONS}:
+                    return jsonify({'success': False, 'message': '文件格式无效'}), 400
+
                 r2_storage = R2Storage()
-                import tempfile
-                with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                with tempfile.NamedTemporaryFile(suffix=file_suffix, delete=False) as temp_file:
                     local_file_path = temp_file.name
                 
                 success, error = r2_storage.download_file(file_path, local_file_path)
@@ -271,7 +605,7 @@ def process_subtitle():
             }), 500
             
     except Exception as e:
-        logger.error(f"处理字幕失败: {str(e)}")
+        logger.exception("处理字幕失败")
         return jsonify({'success': False, 'message': f'处理失败: {str(e)}'}), 500
 
 @subtitleview_bp.route('/api/subtitle/download/<filename>', methods=['GET'])

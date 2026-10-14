@@ -12,6 +12,8 @@ import openai
 from app.chatHistoryUtils import chatHistoryUtils
 from flask import Flask, request,session,jsonify
 import time
+import csv
+from concurrent.futures import ThreadPoolExecutor
 from app.r2_storage import R2Storage
 
 # 尝试导入ffmpeg，如果失败则使用subprocess
@@ -22,10 +24,12 @@ except ImportError:
     FFMPEG_AVAILABLE = False
     logging.warning("ffmpeg-python 未安装，将使用 subprocess 调用 ffmpeg")
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('log')
 
 class SubtitleExtractor:
     MAX_OPENAI_AUDIO_BYTES = 24 * 1024 * 1024
+    TRANSCRIPTION_CHUNK_SECONDS = 600
+    TRANSCRIPTION_CONCURRENCY = 3
 
     def __init__(self, upload_folder: str = "uploads", output_folder: str = "subtitles", openai_api_key: str = None, use_r2: bool = True):
         self.upload_folder = upload_folder
@@ -176,35 +180,94 @@ class SubtitleExtractor:
             
             # 使用新版本的OpenAI API
             from openai import OpenAI
-            client = OpenAI(api_key=self.openai_api_key)
-            
-            # 打开音频文件
-            with open(audio_path, "rb") as audio_file:
-                # 调用OpenAI Whisper API
-                transcript = client.audio.transcriptions.create(
-                    model="whisper-1",
-                    file=audio_file,
-                    language=language if language != 'auto' else None,
-                    response_format="verbose_json"
-                )
+            started = time.perf_counter()
+            with OpenAI(api_key=self.openai_api_key) as client:
+                duration = self.get_video_duration(audio_path)
+                if duration > self.TRANSCRIPTION_CHUNK_SECONDS:
+                    transcript = self._transcribe_long_audio(client, audio_path, language)
+                else:
+                    transcript = self._transcribe_audio_part(client, audio_path, language)
             
             # 保存为SRT格式
-            self._save_openai_whisper_result_as_srt(transcript.model_dump(), output_path)
+            self._save_openai_whisper_result_as_srt(transcript, output_path)
             
             logger.info(f"成功生成字幕: {output_path}")
 
             #计算费用
           
-            params= (userId,'whisper-1',transcript.usage.seconds,created,chargeStatus)
+            usage = transcript.get('usage') or {}
+            billed_seconds = usage.get('seconds', transcript.get('duration', duration))
+            params= (userId,'whisper-1',billed_seconds,created,chargeStatus)
         
             u=chatHistoryUtils()
             u.insertTranscriptionHistory(params)
+            logger.info(f"语音识别完成，耗时 {time.perf_counter() - started:.1f} 秒")
 
             return True
             
         except Exception as e:
             logger.error(f"使用OpenAI Whisper API生成字幕时出错: {str(e)}")
             return False
+
+    def _transcribe_audio_part(self, client, audio_path: str, language: str) -> dict:
+        with open(audio_path, 'rb') as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model='whisper-1',
+                file=audio_file,
+                language=language if language != 'auto' else None,
+                response_format='verbose_json'
+            )
+        return transcript.model_dump()
+
+    def _transcribe_long_audio(self, client, audio_path: str, language: str) -> dict:
+        with tempfile.TemporaryDirectory(prefix='subtitle_audio_') as chunk_directory:
+            manifest_path = os.path.join(chunk_directory, 'segments.csv')
+            codec_args = ['-c:a', 'copy'] if audio_path.lower().endswith('.mp3') else [
+                '-c:a', 'libmp3lame', '-ac', '1', '-ar', '16000', '-b:a', '48k'
+            ]
+            subprocess.run([
+                'ffmpeg', '-v', 'error', '-i', audio_path, '-map', '0:a:0',
+                *codec_args, '-f', 'segment',
+                '-segment_time', str(self.TRANSCRIPTION_CHUNK_SECONDS),
+                '-reset_timestamps', '1', '-segment_list', manifest_path,
+                '-segment_list_type', 'csv',
+                os.path.join(chunk_directory, 'audio_%04d.mp3'), '-y'
+            ], capture_output=True, check=True)
+            with open(manifest_path, newline='', encoding='utf-8') as manifest_file:
+                chunks = list(csv.reader(manifest_file))
+            if not chunks:
+                raise ValueError('音频切段结果为空')
+            initial_start = float(chunks[0][1])
+            logger.info(f"长音频切为 {len(chunks)} 段，并发识别数 {self.TRANSCRIPTION_CONCURRENCY}")
+
+            def transcribe_chunk(chunk):
+                chunk_path = os.path.join(chunk_directory, os.path.basename(chunk[0]))
+                if os.path.getsize(chunk_path) > self.MAX_OPENAI_AUDIO_BYTES:
+                    raise ValueError('音频分段超过识别大小限制')
+                result = self._transcribe_audio_part(client, chunk_path, language)
+                logger.info(f"音频分段识别完成: {os.path.basename(chunk_path)}")
+                return result
+
+            with ThreadPoolExecutor(max_workers=self.TRANSCRIPTION_CONCURRENCY) as executor:
+                results = list(executor.map(transcribe_chunk, chunks))
+
+            segments = []
+            billed_seconds = 0
+            for chunk, result in zip(chunks, results):
+                offset = float(chunk[1]) - initial_start
+                duration = float(chunk[2]) - float(chunk[1])
+                billed_seconds += (result.get('usage') or {}).get('seconds', result.get('duration', duration))
+                for segment in result.get('segments', []):
+                    adjusted = dict(segment)
+                    adjusted['start'] = offset + max(0, min(float(segment['start']), duration))
+                    adjusted['end'] = offset + max(0, min(float(segment['end']), duration))
+                    if adjusted['end'] > adjusted['start']:
+                        segments.append(adjusted)
+            return {
+                'segments': segments,
+                'usage': {'seconds': billed_seconds},
+                'duration': float(chunks[-1][2]) - initial_start
+            }
     
     def _save_openai_whisper_result_as_srt(self, transcript: dict, output_path: str):
         with open(output_path, 'w', encoding='utf-8-sig') as f:

@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('log')
 
 class R2Storage:
     def __init__(self, 
@@ -217,6 +217,70 @@ class R2Storage:
             
         except Exception as e:
             error_msg = f"生成预签名URL失败: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
+
+    def create_multipart_upload(self, object_key: str,
+                                content_type: str) -> Tuple[bool, str]:
+        """创建R2分片上传任务。"""
+        try:
+            response = self.s3_client.create_multipart_upload(
+                Bucket=self.bucket_name,
+                Key=object_key,
+                ContentType=content_type
+            )
+            return True, response['UploadId']
+        except Exception as e:
+            error_msg = f"创建分片上传失败: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
+
+    def upload_part(self, object_key: str, upload_id: str,
+                    part_number: int, data: bytes) -> Tuple[bool, str]:
+        """上传一个R2文件分片。"""
+        try:
+            response = self.s3_client.upload_part(
+                Bucket=self.bucket_name,
+                Key=object_key,
+                UploadId=upload_id,
+                PartNumber=part_number,
+                Body=data,
+                ContentLength=len(data)
+            )
+            return True, response['ETag']
+        except Exception as e:
+            error_msg = f"上传第{part_number}个分片失败: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
+
+    def complete_multipart_upload(self, object_key: str, upload_id: str,
+                                  parts: list) -> Tuple[bool, str]:
+        """合并已上传的R2文件分片。"""
+        try:
+            self.s3_client.complete_multipart_upload(
+                Bucket=self.bucket_name,
+                Key=object_key,
+                UploadId=upload_id,
+                MultipartUpload={'Parts': parts}
+            )
+            return True, object_key
+        except Exception as e:
+            error_msg = f"合并分片失败: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
+
+    def abort_multipart_upload(self, object_key: str,
+                               upload_id: str) -> Tuple[bool, str]:
+        """取消R2分片上传任务。"""
+        try:
+            self.s3_client.abort_multipart_upload(
+                Bucket=self.bucket_name,
+                Key=object_key,
+                UploadId=upload_id
+            )
+            return True, ''
+        except Exception as e:
+            error_msg = f"取消分片上传失败: {str(e)}"
             logger.error(error_msg)
             return False, error_msg
     

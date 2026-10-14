@@ -1115,6 +1115,7 @@
         let useR2Storage = true;
         let downloadFilename = null;
         let isProcessingClick = false; // 防止重复点击
+        let isUploading = false;
 
         function getUploadProgressElements() {
             const container = document.getElementById('uploadProgress');
@@ -1242,7 +1243,7 @@
             if (uploadArea) {
                 uploadArea.addEventListener('click', async function(e) {
                     // 防止重复点击
-                    if (isProcessingClick) {
+                    if (isProcessingClick || isUploading) {
                         console.log('正在处理点击事件，忽略重复点击');
                         return;
                     }
@@ -1349,6 +1350,9 @@
         }
 
         async function handleFile(file) {
+            if (isUploading) {
+                return;
+            }
             // 检查登录状态
             const dataCheckLogin = await checkLoginStatus();     
             let loginStatus = dataCheckLogin.logged_in;
@@ -1368,14 +1372,16 @@
 
             showStatus('正在上传文件...', 'info');
 
-            const formData = new FormData();
-            formData.append('file', file);
-
             resetUploadProgress(true);
             updateUploadProgress(0, '准备上传...');
 
+            let uploadTask = null;
+            isUploading = true;
             try {
-                const data = await uploadWithProgress(formData);
+                uploadTask = await createMultipartUpload(file);
+                await uploadWithProgress(file, uploadTask);
+                await confirmMultipartUpload();
+                const data = uploadTask;
                 if (data.success) {
                     uploadedFilePath = data.file_path;
                     useR2Storage = data.use_r2 || false;
@@ -1389,65 +1395,138 @@
                     hideServerProcessingIndicator();
                 }
             } catch (error) {
+                if (uploadTask) {
+                    await abortMultipartUpload();
+                }
                 failUploadProgress(error.message || '上传失败');
                 showStatus('上传失败: ' + error.message, 'error');
                 hideServerProcessingIndicator();
+            } finally {
+                isUploading = false;
             }
         }
 
-        function uploadWithProgress(formData) {
+        async function createMultipartUpload(file) {
+            const response = await fetch('/api/subtitle/upload-initiate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    filename: file.name,
+                    file_size: file.size,
+                    content_type: file.type || 'application/octet-stream'
+                })
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || '创建上传任务失败');
+            }
+            return data;
+        }
+
+        async function confirmMultipartUpload() {
+            const response = await fetch('/api/subtitle/upload-complete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({})
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || '确认上传失败');
+            }
+        }
+
+        async function abortMultipartUpload() {
+            try {
+                await fetch('/api/subtitle/upload-abort', {method: 'POST'});
+            } catch (error) {
+                console.warn('取消上传任务失败:', error);
+            }
+        }
+
+        async function uploadWithProgress(file, uploadTask) {
+            const partSize = uploadTask.part_size;
+            const totalParts = Math.ceil(file.size / partSize);
+            const loadedParts = new Map();
+            let nextPart = 1;
+            let uploadError = null;
+            const updateProgress = (partNumber, loaded) => {
+                loadedParts.set(partNumber, loaded);
+                const uploadedBytes = Array.from(loadedParts.values()).reduce((total, bytes) => total + bytes, 0);
+                const percent = Math.min(99, (uploadedBytes / file.size) * 100);
+                updateUploadProgress(percent, '正在上传...');
+                showStatus(`正在上传文件... ${Math.round(percent)}%`, 'info');
+            };
+            const uploadWorker = async () => {
+                while (nextPart <= totalParts && !uploadError) {
+                    const partNumber = nextPart++;
+                    const start = (partNumber - 1) * partSize;
+                    const chunk = file.slice(start, Math.min(start + partSize, file.size));
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        try {
+                            await uploadPartWithProgress(chunk, partNumber, loaded => updateProgress(partNumber, loaded));
+                            updateProgress(partNumber, chunk.size);
+                            break;
+                        } catch (error) {
+                            if (attempt === 2 || (error.status && error.status < 500)) {
+                                uploadError = error;
+                                throw error;
+                            }
+                            await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+                        }
+                    }
+                }
+            };
+            const concurrency = Math.min(3, uploadTask.concurrency || 1, totalParts);
+            await Promise.allSettled(Array.from({length: concurrency}, uploadWorker));
+            if (uploadError) {
+                throw uploadError;
+            }
+            updateUploadProgress(100, '上传完成，正在保存...');
+            setServerProcessingState(true, '正在保存文件...');
+        }
+
+        function uploadPartWithProgress(chunk, partNumber, onProgress) {
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
-                xhr.open('POST', '/api/subtitle/upload', true);
+                xhr.open('PUT', `/api/subtitle/upload-part?part_number=${partNumber}`, true);
+                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                xhr.timeout = 15 * 60 * 1000;
 
                 xhr.upload.addEventListener('loadstart', () => {
-                    updateUploadProgress(0, '开始上传...');
+                    onProgress(0);
                     hideServerProcessingIndicator();
-                    showStatus('正在上传文件...', 'info');
                 });
 
                 xhr.upload.addEventListener('progress', (event) => {
                     if (event.lengthComputable) {
-                        const percent = (event.loaded / event.total) * 100;
-                        if (percent >= 100) {
-                            updateUploadProgress(100, '上传完成，等待服务器确认...');
-                            showStatus('上传完成，等待服务器确认...', 'info');
-                            setServerProcessingState(true, '文件已上传，正在同步到云端...');
-                        } else {
-                            updateUploadProgress(percent, '正在上传...');
-                            showStatus(`正在上传文件... ${Math.round(percent)}%`, 'info');
-                        }
-                    } else {
-                        updateUploadProgress(null, '正在上传...');
-                        showStatus('正在上传文件...', 'info');
+                        onProgress(Math.min(event.loaded, chunk.size));
                     }
                 });
 
                 xhr.addEventListener('load', () => {
-                    showStatus('上传完成，等待服务器响应...', 'info');
-                    hideServerProcessingIndicator();
-                    let responseData = null;
+                    let responseData = {};
                     try {
                         responseData = JSON.parse(xhr.responseText || '{}');
                     } catch (error) {
-                        responseData = null;
+                        responseData = {};
                     }
-
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        if (responseData) {
-                            resolve(responseData);
-                        } else {
-                            reject(new Error('解析上传响应失败'));
-                        }
+                    if (xhr.status >= 200 && xhr.status < 300 && responseData.success) {
+                        resolve();
                     } else {
-                        const message = responseData && responseData.message ? responseData.message : '上传失败';
-                        reject(new Error(message));
+                        const message = responseData.message || (
+                            xhr.status === 413
+                                ? `分片 ${partNumber} 仍超过代理上传限制`
+                                : `分片 ${partNumber} 上传失败 (HTTP ${xhr.status || 0})`
+                        );
+                        const error = new Error(message);
+                        error.status = xhr.status;
+                        reject(error);
                     }
                 });
 
                 xhr.addEventListener('error', () => {
                     hideServerProcessingIndicator();
-                    reject(new Error('网络错误，请稍后重试'));
+                    reject(new Error(`分片 ${partNumber} 网络上传失败`));
                 });
 
                 xhr.addEventListener('abort', () => {
@@ -1455,7 +1534,12 @@
                     reject(new Error('上传已取消'));
                 });
 
-                xhr.send(formData);
+                xhr.addEventListener('timeout', () => {
+                    hideServerProcessingIndicator();
+                    reject(new Error('上传超时，请检查网络后重试'));
+                });
+
+                xhr.send(chunk);
             });
         }
 
@@ -1500,7 +1584,10 @@
                 }
                 return response.json();
             })
-            .then(data => {
+            .then(async data => {
+                if (data.task_id) {
+                    data = await waitForSubtitleResult(data.task_id);
+                }
                 document.getElementById('processBtn').disabled = false;
                 
                 if (data.success) {
@@ -1516,6 +1603,23 @@
                 document.getElementById('processBtn').disabled = false;
                 showStatus('处理失败: ' + error.message, 'error');
             });
+        }
+
+        async function waitForSubtitleResult(taskId) {
+            while (true) {
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                const response = await fetch(`/api/subtitle/process-status/${taskId}`, {
+                    cache: 'no-store'
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || '查询处理进度失败');
+                }
+                if (data.status === 'complete') {
+                    return data.result;
+                }
+                showStatus('正在生成字幕，长音频可能需要几分钟，请保持页面打开...', 'info');
+            }
         }
 
         function showResult(data) {

@@ -71,6 +71,12 @@ Create a `.env` file in the project root and populate the following values:
 
 > Copy `.env.sample` if available; otherwise create the file manually.
 
+Subtitle media uploads use three concurrent 1 MiB browser chunks with retries. The server combines them into 8 MiB R2 multipart chunks, allowing files up to 5 GiB even when the proxy has a low request-body limit. Upload staging uses file locks across Gunicorn workers; retries do not duplicate chunks, and R2 parts are assembled in file order. This staging implementation requires Linux/Unix file locking.
+
+Subtitle processing runs in a background thread and the page polls for completion. Task results are stored alongside upload staging files in the system temporary directory so all Gunicorn workers can read them. Keep the page open until completion; restarting the service interrupts running tasks.
+
+Speech recognition splits audio longer than ten minutes into approximately ten-minute chunks and transcribes up to three chunks concurrently with `whisper-1`. MP3 splitting copies encoded audio to avoid another full conversion. Subtitle timestamps are shifted using FFmpeg's segment manifest, and transcription usage is summed into a single history record. Chunk boundaries can affect recognition of sentences crossing a cut.
+
 ## Installation and Deployment
 ```
 # 1. Clone the repository
